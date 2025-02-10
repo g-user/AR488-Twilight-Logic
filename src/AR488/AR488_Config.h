@@ -7,7 +7,7 @@
 
 
 /***** Firmware version *****/
-#define FWVER "AR488 GPIB controller, ver. 0.51.29, 18/03/2024"
+#define FWVER "AR488 GPIB controller, ver. 0.51.29 (JW), 29/01/2025"
 
 
 /***** BOARD CONFIGURATION *****/
@@ -67,12 +67,19 @@
 /***** ESP32 boards *****/
 #elif defined(ESP32)
   #define NON_ARDUINO   // MUST BE DEFINED!
-  #define ESP32_DEVKIT1_WROOM_32
+  //#define ESP32_DEVKIT1_WROOM_32
   // David Douard / Johann Wilhelm board layouts
   //#define ESP32_TTGO_T8_161
   //#define ESP32_ESP32DEV
   //#define ESP32_LOLIN32_161   // ESP32_LOLIN32_161_V2 profile has the same pin assigments
   //#define ESP32_S2_161
+  
+  #define ESP32_Wilhelm_AR488_ESP32S2_R4
+//  #define ESP32_Wilhelm_AR488_ESP32S2_R5
+  /*
+   * Select board ESP32S2 Dev Module from the espressif board definitions
+   * Additionally, USB CDC On Boot should be set to "Enabled".
+  */
 
 /***** RPI PIco and Pico W *****/
 //#elif defined(ARDUINO_ARCH_RP2040)
@@ -161,16 +168,28 @@
  * This will require the use of an additional GPIO pin to control
  * the read and write modes of the ICs.
  */
-//#define SN7516X
-#ifdef SN7516X
-//  #define SN7516X_TE 6
-//  #define SN7516X_DC 13
-//  #define SN7516X_SC 12
-  // ONLYA board
-  #define SN7516X_TE 13
-  #define SN7516X_DC 5
-#endif
 
+
+#ifdef ESP32_Wilhelm_AR488_ESP32S2_R4
+  #define SN7516X
+  #define SN7516X_TE 17
+#elif ESP32_Wilhelm_AR488_ESP32S2_R5
+  #define SN7516X
+  #define SN7516X_TE 17
+  #define SN7516X_DC 38
+  #define SN7516X_PE 1
+#else
+
+  //#define SN7516X
+  #ifdef SN7516X
+  //  #define SN7516X_TE 6
+  //  #define SN7516X_DC 13
+  //  #define SN7516X_SC 12
+    // ONLYA board
+    #define SN7516X_TE 13
+    #define SN7516X_DC 5
+  #endif
+#endif
 
 
 

@@ -14,6 +14,9 @@
 
 /***** AR488_GPIBbus.cpp, ver. 0.51.29, 18/03/2024 *****/
 
+extern bool isDebug;
+extern uint16_t settle_r_time; // receive settle time (in us)
+extern uint16_t settle_s_time; // send settle time (in us)
 
 /*********************************************/
 /***** GPIB COMMAND & STATUS DEFINITIONS *****/
@@ -116,7 +119,8 @@ enum operatingModes {
 
 
 enum transmitModes {
-  TM_IDLE,
+  TM_CTRL_IDLE, // Dieter
+  TM_DEVICE_IDLE, // Dieter
   TM_RECV,
   TM_SEND
 };

@@ -220,6 +220,13 @@ GPIBbus gpibBus;
 // Verbose mode
 bool isVerb = false;
 
+// Debug mode
+bool isDebug = false;
+
+// Adjustable settling times
+uint16_t settle_r_time = 0; // receive settle time (in us)
+uint16_t settle_s_time = 0; // send settle time (in us)
+
 // CR/LF terminated line ready to process
 uint8_t lnRdy = 0;      
 
@@ -830,8 +837,11 @@ static cmdRec cmdHidx [] = {
   { "unt",         2, (void(*)(char*)) untalk_h    },
   { "ver",         3, ver_h       },
   { "verbose",     3, (void(*)(char*)) verb_h    },
-  { "xdiag",       3, xdiag_h     }
+  { "xdiag",       3, xdiag_h     },
 //  { "xonxoff",     3, xonxoff_h   }
+  { "debug",       3, (void(*)(char*)) debug_h    },
+  { "settle_r",    3, settler_h     },
+  { "settle_s",    3, settles_h     },
 };
 
 
@@ -1142,6 +1152,38 @@ void rtmo_h(char *params) {
     }
   } else {
     dataPort.println(gpibBus.cfg.rtmo);
+  }
+}
+
+/***** Show or set receive settle time (in us) *****/
+void settler_h(char *params) {
+  uint16_t val;
+  if (params != NULL) {
+    if (notInRange(params, 0, 32000, val)) return;
+    settle_r_time = val;
+    if (isVerb) {
+      dataPort.print(F("Set [receive settle time] to: "));
+      dataPort.print(val);
+      dataPort.println(F(" us"));
+    }
+  } else {
+    dataPort.println(settle_r_time);
+  }
+}
+
+/***** Show or set send settle time (in us) *****/
+void settles_h(char *params) {
+  uint16_t val;
+  if (params != NULL) {
+    if (notInRange(params, 0, 32000, val)) return;
+    settle_s_time = val;
+    if (isVerb) {
+      dataPort.print(F("Set [send settle time] to: "));
+      dataPort.print(val);
+      dataPort.println(F(" us"));
+    }
+  } else {
+    dataPort.println(settle_s_time);
   }
 }
 
@@ -1837,6 +1879,12 @@ void verb_h() {
   dataPort.println(isVerb ? "ON" : "OFF");
 }
 
+/***** Enable debug mode 0=OFF; 1=ON *****/
+void debug_h() {
+  isDebug = !isDebug;
+  dataPort.print("Debug: ");
+  dataPort.println(isDebug ? "ON" : "OFF");
+}
 
 /***** Set version string *****/
 /* Replace the standard AR488 version string with something else

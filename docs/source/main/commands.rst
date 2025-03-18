@@ -339,6 +339,35 @@ The ``++savecfg`` command will save the following current parameter values: ``ad
 :Modes: controller, device
 :Syntax: ``++savecfg``
 
+``++settle_r++``
+++++++++++++++++
+
+This command configures a settling time between the bus providing data to read
+(DAV active, NRFD asserted), and actually reading the data from the bus. The
+time is in microseconds, valid range between 0 (no delay) and 16000.
+
+If the command is issued without a parameter, the current read settling time
+is returned.
+
+:Modes: controller, device
+:Syntax: ``++settle_r <time>``
+	 where <time> is a decimal number between 0 and 16000.
+
+
+``++settle_s++``
+++++++++++++++++
+
+This command configures a settling time between delivering the data to the
+bus, and asserting the DAV signal. The time is in microseconds, valid range
+between 0 (no delay) and 16000.
+
+If the command is issued without a parameter, the current read settling time
+is returned.
+
+:Modes: controller, device
+:Syntax: ``++settle_s <time>``
+	 where <time> is a decimal number between 0 and 16000.
+
 
 ``++spoll``
 +++++++++++

@@ -164,6 +164,8 @@ static const char cmdHelp[] PROGMEM = {
   "read_tmo_ms:P Read timeout specified between 1 - 3000 milliseconds\n"
   "rst:P Reset the controller\n"
   "savecfg:P Save configration\n"
+  "settle_r:P Settling time on read operation, between 0 and 16000 microseconds\n"
+  "settle_s:P Settling time on send operation, between 0 and 16000 microseconds\n"
   "spoll:P Serial poll the addressed host or all instruments\n"
   "srq:P Return status of srq signal (1-srq asserted/0-srq not asserted)\n"
   "status:P Set the status byte to be returned on being polled (bit 6 = RQS, i.e SRQ asserted)\n"

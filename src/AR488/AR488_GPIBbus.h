@@ -14,10 +14,6 @@
 
 /***** AR488_GPIBbus.cpp, ver. 0.51.29, 18/03/2024 *****/
 
-extern bool isDebug;
-extern uint16_t settle_r_time; // receive settle time (in us)
-extern uint16_t settle_s_time; // send settle time (in us)
-
 /*********************************************/
 /***** GPIB COMMAND & STATUS DEFINITIONS *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv *****/

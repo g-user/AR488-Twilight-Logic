@@ -361,7 +361,7 @@ This command configures a settling time between delivering the data to the
 bus, and asserting the DAV signal. The time is in microseconds, valid range
 between 0 (no delay) and 16000.
 
-If the command is issued without a parameter, the current read settling time
+If the command is issued without a parameter, the current send settling time
 is returned.
 
 :Modes: controller, device

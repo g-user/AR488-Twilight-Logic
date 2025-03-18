@@ -224,11 +224,20 @@ public:
   bool unAddressDevice();
   bool haveAddressedDevice();
 
+  void setSettleRTime(uint16_t t) { settle_r_time = t; }
+  void setSettleSTime(uint16_t t) { settle_s_time = t; }
+  uint16_t getSettleRTime(void) { return settle_r_time; }
+  uint16_t getSettleSTime(void) { return settle_s_time; }
+
 private:
 
   bool txBreak;  // Signal to break the GPIB transmission
   bool deviceAddressed;
   bool isTerminatorDetected(uint8_t bytes[3], uint8_t eorSequence);
+
+  // Adjustable settling times
+  uint16_t settle_r_time; // receive settle time (in us)
+  uint16_t settle_s_time; // send settle time (in us)
 
   // Interrupt flag for MCP23S17
 #ifdef AR488_MCP23S17

@@ -223,10 +223,6 @@ bool isVerb = false;
 // Debug mode
 bool isDebug = false;
 
-// Adjustable settling times
-uint16_t settle_r_time = 0; // receive settle time (in us)
-uint16_t settle_s_time = 0; // send settle time (in us)
-
 // CR/LF terminated line ready to process
 uint8_t lnRdy = 0;      
 
@@ -1160,14 +1156,14 @@ void settler_h(char *params) {
   uint16_t val;
   if (params != NULL) {
     if (notInRange(params, 0, 32000, val)) return;
-    settle_r_time = val;
+    gpibBus.setSettleRTime(val);
     if (isVerb) {
       dataPort.print(F("Set [receive settle time] to: "));
       dataPort.print(val);
       dataPort.println(F(" us"));
     }
   } else {
-    dataPort.println(settle_r_time);
+    dataPort.println(gpibBus.getSettleRTime());
   }
 }
 
@@ -1176,14 +1172,14 @@ void settles_h(char *params) {
   uint16_t val;
   if (params != NULL) {
     if (notInRange(params, 0, 32000, val)) return;
-    settle_s_time = val;
+    gpibBus.setSettleSTime(val);
     if (isVerb) {
       dataPort.print(F("Set [send settle time] to: "));
       dataPort.print(val);
       dataPort.println(F(" us"));
     }
   } else {
-    dataPort.println(settle_s_time);
+    dataPort.println(gpibBus.getSettleSTime());
   }
 }
 

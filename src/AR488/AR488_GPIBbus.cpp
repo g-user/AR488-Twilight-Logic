@@ -498,13 +498,6 @@ bool GPIBbus::sendCmd(uint8_t cmdByte) {
   state = writeByte(cmdByte, NO_EOI);
   if (state == HANDSHAKE_COMPLETE) return OK;
 
-  if (isDebug)
-  {
-    char buffer[40];
-    sprintf(buffer, "Failed to send command %02X to device ", cmdByte);
-    dataPort.println(buffer);
-  }
-
 #if defined(DEBUG_GPIBbus_RECEIVE) || defined(DEBUG_GPIBbus_SEND)
   char buffer[40];
   sprintf(buffer, "Failed to send command %02X to device ", cmdByte);
@@ -575,16 +568,12 @@ bool GPIBbus::receiveData(Stream &dataStream, bool detectEoi, bool detectEndByte
     // txBreak > 0 indicates break condition
     if (txBreak)
     {
-      if (isDebug)
-        dataPort.println(F("receiveData: txBreak"));
       break;
     }
 
     // ATN asserted
     if (isAsserted(ATN_PIN))
     {
-      if (isDebug)
-        dataPort.println(F("receiveData: isAsserted(ATN_PIN)"));
       break;
     }
 
@@ -611,8 +600,6 @@ bool GPIBbus::receiveData(Stream &dataStream, bool detectEoi, bool detectEndByte
       if (readWithEoi) {
         if (eoiDetected)
         {
-          if (isDebug)
-            dataPort.println(F("receiveData: eoiDetected"));
           break;
         }
       } else {
@@ -620,15 +607,11 @@ bool GPIBbus::receiveData(Stream &dataStream, bool detectEoi, bool detectEndByte
         if (detectEndByte) {
           if (bytes[0] == endByte)
           {
-            if (isDebug)
-              dataPort.println(F("receiveData: endByte"));
             break;
           }
         } else {
           if (isTerminatorDetected(bytes, eor))
           {
-            if (isDebug)
-              dataPort.println(F("receiveData: isTerminatorDetected()"));
             break;
           }
         }
@@ -641,20 +624,6 @@ bool GPIBbus::receiveData(Stream &dataStream, bool detectEoi, bool detectEndByte
       // Stop (error or timeout)
       break;
     }
-  }
-
-  if (isDebug)
-  {
-    if(state == IFC_ASSERTED)
-      dataPort.println(F("receiveData: IFC_ASSERTED"));
-    else if(state == ATN_ASSERTED)
-      dataPort.println(F("receiveData: ATN_ASSERTED"));
-    else if(state != HANDSHAKE_COMPLETE)
-      {
-        char buffer[60];
-        sprintf(buffer, "receiveData: state: %d eoiDetected: %d", state, eoiDetected);
-        dataPort.println(buffer);
-      }
   }
 
 #ifdef DEBUG_GPIBbus_RECEIVE
@@ -718,13 +687,6 @@ bool GPIBbus::receiveData(Stream &dataStream, bool detectEoi, bool detectEndByte
 
 /***** Send a series of characters as data to the GPIB bus *****/
 void GPIBbus::sendData(char *data, uint8_t dsize) {
-
-  // should never happen
-  if (dsize == 0)
-  {
-    if (isDebug)
-      dataPort.println(F("dsize == 0"));
-  }
 
   //  bool err = false;
   uint8_t tc;
@@ -1173,8 +1135,6 @@ enum gpibHandshakeStates GPIBbus::readByte(uint8_t *db, bool readWithEoi, bool *
   {
     assertSignal(NRFD_BIT);
     assertSignal(NDAC_BIT);
-    if (isDebug)
-      dataPort.println(F("readByte: assert NRFD and NDAC"));
   }
 
   // Otherwise return stage
@@ -1293,12 +1253,6 @@ enum gpibHandshakeStates GPIBbus::writeByte(uint8_t db, bool isLastByte) {
     return gpibState;
   }
 
-  if (isDebug)
-  {
-    char buffer[40];
-    sprintf(buffer, "Error writeByte(%02X, %d)", db, isLastByte);
-    dataPort.println(buffer);
-  }
   // make sure that data are not considered valid
   clearSignal(DAV_BIT);
 

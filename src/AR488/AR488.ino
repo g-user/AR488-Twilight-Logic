@@ -222,9 +222,6 @@ GPIBbus gpibBus;
 // Verbose mode
 bool isVerb = false;
 
-// Debug mode
-bool isDebug = false;
-
 // CR/LF terminated line ready to process
 uint8_t lnRdy = 0;      
 
@@ -837,7 +834,6 @@ static cmdRec cmdHidx [] = {
   { "verbose",     3, (void(*)(char*)) verb_h    },
   { "xdiag",       3, xdiag_h     },
 //  { "xonxoff",     3, xonxoff_h   }
-  { "debug",       3, (void(*)(char*)) debug_h    },
   { "settle_r",    3, settler_h     },
   { "settle_s",    3, settles_h     },
 };
@@ -1875,13 +1871,6 @@ void verb_h() {
   isVerb = !isVerb;
   dataPort.print("Verbose: ");
   dataPort.println(isVerb ? "ON" : "OFF");
-}
-
-/***** Enable debug mode 0=OFF; 1=ON *****/
-void debug_h() {
-  isDebug = !isDebug;
-  dataPort.print("Debug: ");
-  dataPort.println(isDebug ? "ON" : "OFF");
 }
 
 /***** Set version string *****/

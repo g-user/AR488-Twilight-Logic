@@ -115,8 +115,8 @@ enum operatingModes {
 
 
 enum transmitModes {
-  TM_CTRL_IDLE, // Dieter
-  TM_DEVICE_IDLE, // Dieter
+  TM_CTRL_IDLE,
+  TM_DEVICE_IDLE,
   TM_RECV,
   TM_SEND
 };

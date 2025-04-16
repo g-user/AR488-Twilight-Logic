@@ -7,7 +7,7 @@
 
 
 /***** Firmware version *****/
-#define FWVER "AR488 GPIB controller, ver. 0.51.29 (JW), 29/01/2025"
+#define FWVER "AR488 GPIB controller, ver. 0.53.04 (JW), 13/04/2025"
 
 
 /***** BOARD CONFIGURATION *****/
@@ -57,15 +57,21 @@
   #define AR488_MEGA2560_D
   //#define AR488_MEGA2560_E1
   //#define AR488_MEGA2560_E2
-//  #define AR488_MCP23S17
 
 /***** Panduino Mega 644 or Mega 1284 board *****/
 #elif defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)
   /* Board/layout selection */
   #define AR488_MEGA644P_MCGRAW
 
+/***** Pololu 328PB board *****/
+#elif __AVR_ATmega328PB__
+  /* Board/layout selection */
+  //#define AR488_UNO
+  #define AR488_328PB_ALT
+
 /***** ESP32 boards *****/
 #elif defined(ESP32)
+  /* Board/layout selection */
   #define NON_ARDUINO   // MUST BE DEFINED!
   //#define ESP32_DEVKIT1_WROOM_32
   // David Douard / Johann Wilhelm board layouts
@@ -82,9 +88,10 @@
   */
 
 /***** RPI PIco and Pico W *****/
-//#elif defined(ARDUINO_ARCH_RP2040)
-//  #define NON_ARDUINO
-//  #define RPI_PICO
+#elif defined(ARDUINO_ARCH_RP2040)
+  /* Board/layout selection */
+  #define RAS_PICO_L1
+//  #define RAS_PICO_L2
 
 //#elif defined(ARDUINO_NANO_RP2040_CONNECT)
 
@@ -191,6 +198,12 @@
   #endif
 #endif
 
+
+/***** Level shifter (e.g. TXS0108E) enable pin *****/
+//#define LEVEL_SHIFTER
+#ifdef LEVEL_SHIFTER
+  #define LVL_SHIFT_EN 22
+#endif
 
 
 /***** MISCELLANEOUS OPTIONS *****/

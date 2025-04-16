@@ -8,6 +8,7 @@
 
 /***** Firmware version *****/
 #define FWVER "AR488 GPIB controller, ver. 0.53.04 (JW), 13/04/2025"
+#define FWVER_USB 0x0053
 
 
 /***** BOARD CONFIGURATION *****/
@@ -114,7 +115,12 @@
 #define DATAPORT_ENABLE
 #ifdef DATAPORT_ENABLE
   // Serial port device
-  #define AR_SERIAL_PORT Serial
+  //#define AR_SERIAL_PORT Serial
+
+  #define AR_SERIAL_PORT_USE_USBSerial 1
+  #define AR_SERIAL_PORT USBSerial
+  extern USBCDC USBSerial;
+
   // #define AR_SERIAL_SWPORT
   // Set port operating speed
   #define AR_SERIAL_SPEED 115200

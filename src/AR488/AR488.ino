@@ -78,6 +78,14 @@
 */
 
 
+
+#if AR_SERIAL_PORT_USE_USBSerial==1
+  #include "USB.h"
+  #include "USBCDC.h"
+  USBCDC USBSerial;
+  #include "esp_mac.h"
+#endif
+
 /*************************************/
 /***** MACRO STRUCTRURES SECTION *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
@@ -299,6 +307,24 @@ void setup() {
 
   // Initialise parse buffer
   flushPbuf();
+
+
+  #if AR_SERIAL_PORT_USE_USBSerial==1
+  USB.firmwareVersion(FWVER_USB);
+  USB.manufacturerName("Twilight-Logic");
+  USB.productName("AR488");
+
+  uint8_t mac[6] = {0};
+  static char serialString[18]="unset";
+  esp_err_t ret = ESP_OK;
+  ret = esp_read_mac(mac, ESP_MAC_EFUSE_FACTORY);
+  if (ret==ESP_OK) {
+    sprintf(serialString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  }
+
+USB.serialNumber(serialString);
+    USB.begin();
+  #endif
 
   // Initialise serial at the configured baud rate
   AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);

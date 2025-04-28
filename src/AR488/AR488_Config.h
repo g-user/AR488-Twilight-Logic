@@ -115,11 +115,13 @@
 #define DATAPORT_ENABLE
 #ifdef DATAPORT_ENABLE
   // Serial port device
-  //#define AR_SERIAL_PORT Serial
-
+#if  ARDUINO_USB_CDC_ON_BOOT!=1
   #define AR_SERIAL_PORT_USE_USBSerial 1
   #define AR_SERIAL_PORT USBSerial
   extern USBCDC USBSerial;
+#else
+  #define AR_SERIAL_PORT Serial
+#endif
 
   // #define AR_SERIAL_SWPORT
   // Set port operating speed

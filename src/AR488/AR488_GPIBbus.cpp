@@ -870,7 +870,6 @@ void GPIBbus::setControls(uint8_t state) {
     case CIDS:  // Controller idle state
       setTransmitMode(TM_CTRL_IDLE);
       clearSignal(ATN_BIT);
-      setTransmitMode(TM_IDLE);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE, LOW); // NDAC NRFD -> outputs
 #endif

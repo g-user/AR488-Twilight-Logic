@@ -1854,6 +1854,11 @@ void setGpibDbus(uint8_t db) {
 #if defined (AR488_CUSTOM) || defined (NON_ARDUINO)
 
 
+uint8_t databus[8] = { DIO1_PIN, DIO2_PIN, DIO3_PIN, DIO4_PIN, DIO5_PIN, DIO6_PIN, DIO7_PIN, DIO8_PIN };
+
+uint8_t ctrlbus[8] = { IFC_PIN, NDAC_PIN, NRFD_PIN, DAV_PIN, EOI_PIN, REN_PIN, SRQ_PIN, ATN_PIN };
+
+
 /***** Set the GPIB data bus to input pullup *****/
 void readyGpibDbus() {
   for (uint8_t i=0; i<8; i++){

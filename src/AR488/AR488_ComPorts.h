@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "AR488_Config.h"
 
-/***** AR488_ComPorts.cpp, ver. 0.51.18, 26/02/2023 *****/
+/***** AR488_ComPorts.cpp, ver. 0.53.12, 26/02/2023 *****/
 
 
 /***** DEVNULL Library *****
@@ -49,7 +49,7 @@ private:
 #ifdef DATAPORT_ENABLE
 
   extern Stream& dataPort;
-  void startDataPort();
+  void startDataPort(unsigned long baud);
 
   #define DATAPORT_START() startDataPort()
   #define DATA_RAW_PRINT(str) dataPort.print(str)
@@ -70,7 +70,7 @@ private:
 #ifdef DEBUG_ENABLE
 
   extern Stream& debugPort;
-  void startDebugPort();
+  void startDebugPort(unsigned long baud);
   void getFuncName(char * funcstr, const char * function);
 
   template<typename T1, typename T2>

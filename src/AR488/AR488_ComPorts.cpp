@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "AR488_ComPorts.h"
 
-/***** AR488_ComPorts.cpp, ver. 0.51.18, 26/02/2023 *****/
+/***** AR488_ComPorts.cpp, ver. 0.53.12, 26/02/2023 *****/
 
 
 /***** DEVNULL Library *****
@@ -71,16 +71,16 @@ int DEVNULL::lastByte()
 
     SoftwareSerial dataPort(SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN);
 
-    void startDataPort() {
-      dataPort.begin(AR_SERIAL_SPEED);
+    void startDataPort(unsigned long baud) {
+      dataPort.begin(baud);
     }
 
   #else
 
     Stream& dataPort = AR_SERIAL_PORT;
 
-    void startDataPort() {
-      AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);
+    void startDataPort(unsigned long baud) {
+      AR_SERIAL_PORT.begin(baud);
     }
   
   #endif
@@ -103,16 +103,16 @@ int DEVNULL::lastByte()
 
     SoftwareSerial debugPort(SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN);
 
-    void startDebugPort() {
-      debugPort.begin(DB_SERIAL_SPEED);
+    void startDebugPort(unsigned long baud) {
+      debugPort.begin(baud);
     }
   
   #else
 
     Stream& debugPort = DB_SERIAL_PORT;
 
-    void startDebugPort() {
-      DB_SERIAL_PORT.begin(DB_SERIAL_SPEED);
+    void startDebugPort(unsigned long baud) {
+      DB_SERIAL_PORT.begin(baud);
     }
 
   #endif

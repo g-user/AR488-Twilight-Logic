@@ -17,18 +17,6 @@
 
 #define GPIB_CFG_SIZE 83
 
-/***** Debug Port *****/
-#ifdef DB_SERIAL_ENABLE
-extern Stream &debugPort;
-/* Configured in Config.h */
-//#define DEBUG_GPIBbus_RECEIVE
-//#define DEBUG_GPIBbus_SEND
-//#define DEBUG_GPIBbus_CONTROL
-//#define SN7516X
-/* Configured in Config.h */
-
-#endif
-
 
 /***** Universal Multiline commands (apply to all devices) *****/
 #define GC_GTL 0x01

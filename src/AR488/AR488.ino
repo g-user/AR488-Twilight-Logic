@@ -14,7 +14,7 @@
 #include "AR488_Eeprom.h"
 
 
-/***** FWVER "AR488 GPIB controller, ver. 0.53.11, 08/05/2025" *****/
+/***** FWVER "AR488 GPIB controller, ver. 0.53.13, 31/05/2025" *****/
 
 /*
   Arduino IEEE-488 implementation by John Chajecki
@@ -144,7 +144,7 @@ uint8_t pbPtr = 0;
 /**************************/
 /***** HELP MESASAGES *****/
 /****** vvvvvvvvvvvvv *****/
-
+/*
 static const char cmdHelp[] PROGMEM = {
   "addr:P Display/set device address\n"
   "auto:P Automatically request talk and read response\n"
@@ -193,6 +193,66 @@ static const char cmdHelp[] PROGMEM = {
   "verbose:C Verbose (human readable) mode\n"
   "xdiag:C Bus diagnostics (see the doc)\n"
 };
+*/
+
+
+static const char cmdHelpPrologix[] PROGMEM = {
+  "\nPrologix Compatible Commands:\n"
+  "addr:\tDisplay/set device address\n"
+  "auto:\tAutomatically request talk and read response\n"
+  "clr:\tSend Selected Device Clear to current GPIB address\n"
+  "eoi:\tEnable/disable assertion of EOI signal\n"
+  "eor:\tShow or set end of receive character(s)\n"
+  "eos:\tSpecify GPIB termination character\n"
+  "eot_char:\tSet character to append to USB output when EOT enabled\n"
+  "eot_enable:\tEnable/Disable appending user specified character to USB output on EOI detection\n"
+  "help:\tThis message\n"
+  "ifc:\tAssert IFC signal for 150 miscoseconds - make AR488 controller in charge\n"
+  "llo:\tLocal lockout - disable front panel operation on instrument\n"
+  "loc:\tEnable front panel operation on instrument\n"
+  "lon:\tPut controller in listen-only mode (listen to all traffic)\n"
+  "mode:\tSet the interface mode (1=controller/0=device)\n"
+  "read:\tRead data from instrument\n"
+  "read_tmo_ms:\tRead timeout specified between 1 - 3000 milliseconds\n"
+  "rst:\tReset the controller\n"
+  "savecfg:\tSave configration\n"
+  "spoll:\tSerial poll the addressed host or all instruments\n"
+  "srq:\tReturn status of srq signal (1-srq asserted/0-srq not asserted)\n"
+  "status:\tSet the status byte to be returned on being polled (bit 6 = RQS, i.e SRQ asserted)\n"
+  "trg:\tSend trigger to selected devices (up to 15 addresses)\n"
+  "ver:\tDisplay firmware version\n"
+};
+
+
+static const char cmdHelpExtended[] PROGMEM = {
+  "/nExtended custom commands:"
+  "aspoll:\tSerial poll all instruments (alias: ++spoll all)\n"
+  "dcl:\tSend unaddressed (all) device clear  [power on reset] (is the rst?)\n"
+  "default:\tSet configuration to controller default settings\n"
+  "id:\tShow interface ID information - see also: 'id name'; 'id serial'; 'id verstr'\n"
+  "id name:\tShow/Set the name of the interface\n"
+  "id serial:\tShow/Set the serial number of the interface\n"
+  "id verstr:\tShow/Set the version string sent in reply to ++ver e.g. \"GPIB-USB\"). Max 47 chars, excess truncated.\n"
+  "idn:\tEnable/Disable reply to *idn? (disabled by default)\n"
+  "macro:\tRun a macro (if macro support is compiled)\n"
+  "fndl:\tFind listners\n"
+  "ppoll:\tConduct a parallel poll\n"
+  "ren:\tAssert or Unassert the REN signal\n"
+  "repeat:\tRepeat a given command and return result\n"
+  "secread:\tRead from a secondary address\n"
+  "secsend:\tSend data or command to a secondary address\n"
+  "setvstr:\tDEPRECATED - see id verstr\n"
+  "srqauto:\tAutomatically conduct serial poll when SRQ is asserted\n"
+  "tct:\tSignal remote device to take control\n"
+  "ton:\tPut controller in talk-only mode (send data only)\n"
+  "unl:\tUnlisten the GPIB bus\n"
+  "unt:\tUntalk the GPIB bus"
+  "verbose:\tVerbose (human readable) mode\n"
+  "xdiag:\tBus diagnostics (see the doc)\n"
+};
+
+
+
 
 /***** ^^^^^^^^^^^^^ *****/
 /***** HELP MESSAGES *****/
@@ -301,11 +361,13 @@ void setup() {
   flushPbuf();
 
   // Initialise serial at the configured baud rate
-  AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);
+  startDataPort(AR_SERIAL_SPEED);
+//  AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);
 
 #ifdef DEBUG_ENABLE
   // Initialise debug port
-  DB_SERIAL_PORT.begin(DB_SERIAL_SPEED);
+//  DB_SERIAL_PORT.begin(DB_SERIAL_SPEED);
+  startDebugPort(DB_SERIAL_SPEED);
 #endif
 
 #ifdef AR_SERIAL_BT_ENABLE
@@ -1567,6 +1629,8 @@ void rst_h() {
   ESP.restart();
 #elif defined(ARDUINO_ARCH_RP2040)
   rp2040.reboot();
+#elif defined (__IMXRT1062__) 
+  SCB_AIRCR = 0x05FA0004;
 #else
   // Otherwise restart program (soft reset)
   asm volatile ("  jmp 0");
@@ -1816,29 +1880,33 @@ void lon_h(char *params) {
 }
 
 
-/***** Show help message *****/
-void help_h(char *params) {
-  char c, t;
+/***** Print help *****/
+bool printHelp(const char * help, char * keyword){
+//  char c, t;
+  char c;
   char token[20];
   uint8_t i;
+  bool found = false;
 
   i = 0;
-  for (size_t k = 0; k < strlen_P(cmdHelp); k++) {
-    c = pgm_read_byte_near(cmdHelp + k);
+  for (size_t k = 0; k < strlen_P(help); k++) {
+    c = pgm_read_byte_near(help + k);
 
 
     if (i < 20) {
       if(c == ':') {
         token[i] = 0;
-        if((params == NULL) || (strcmp(token, params) == 0)) {
+        if((keyword == NULL) || (strcmp(token, keyword) == 0)) {
           dataPort.print(F("++"));
           dataPort.print(token);
-          dataPort.print(c);
+//          dataPort.print(c);
           k++;
+          /*
           t = pgm_read_byte_near(cmdHelp + k);
           dataPort.print(F(" ["));
           dataPort.print(t);
           dataPort.print(F("]"));
+          */
           i = 255; // means we need to print until \n
         }
         
@@ -1853,6 +1921,33 @@ void help_h(char *params) {
       i = 0;
     }
   }
+  return found;
+}
+
+
+
+/***** Show help message *****/
+void help_h(char * params) {
+  char * param;
+  char * keyword;
+  bool found = false;
+
+  if (params != NULL) {
+    param = strtok(params, " ,\t");
+    if (strncasecmp(param, "prologix", 8) == 0) {
+      keyword = strtok(NULL, " ,\t");
+      printHelp(cmdHelpPrologix, keyword);
+    }else if (strncasecmp(param, "extended", 8) == 0) {
+      keyword = strtok(NULL, " ,\t");
+      printHelp(cmdHelpExtended, keyword);
+    }else{
+      printHelp(cmdHelpPrologix, param);
+      if (!found) printHelp(cmdHelpExtended, param);
+    }
+  }else{
+    printHelp(cmdHelpPrologix, NULL);
+    printHelp(cmdHelpExtended, NULL);
+  }  
 }
 
 
@@ -2326,7 +2421,10 @@ void id_h(char *params) {
 #endif
           memset(gpibBus.cfg.vstr, '\0', 48);
           strncpy(gpibBus.cfg.vstr, datastr, dlen);
-          if (isVerb) dataPort.print(F("VerStr: "));dataPort.println(gpibBus.cfg.vstr);
+          if (isVerb) {
+            dataPort.print(F("VerStr: "));
+            dataPort.println(gpibBus.cfg.vstr);
+          }
         }else{
           if (isVerb) dataPort.println(F("Length of version string must not exceed 48 characters!"));
           errorMsg(2);

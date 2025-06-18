@@ -1010,8 +1010,8 @@ bool GPIBbus::unAddressDevice() {
   // De-bounce
   delayMicroseconds(30);
   // Utalk/unlisten
-  if (sendCmd(GC_UNL)) return ERR;
   if (sendCmd(GC_UNT)) return ERR;
+  if (sendCmd(GC_UNL)) return ERR;
   // Clear secondary address
 //  cfg.saddr = 0xFF;
   // Clear flag

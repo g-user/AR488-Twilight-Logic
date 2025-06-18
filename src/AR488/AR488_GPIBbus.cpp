@@ -565,6 +565,16 @@ enum receiveState GPIBbus::receiveData(Stream &dataStream, bool detectEoi, bool 
 //  DB_PRINT(F("ATN:  "), (isAsserted(ATN ? 1 : 0));
 #endif
 
+  // If ATN is asserted, then wait for it to get unasserted
+  if (isAsserted(ATN_PIN)) {
+    unsigned long timeout = 0;
+    timeout = millis() + cfg.rtmo;
+    while (getGpibPinState(ATN_PIN) == LOW) {
+      if (millis() > timeout) break;    // timeout to prevent hung state
+      delayMicroseconds(20);
+    }
+  }
+
   // Ready the data bus
   readyGpibDbus();
 
@@ -1101,7 +1111,7 @@ enum gpibHandshakeState GPIBbus::readByte(uint8_t *db, bool readWithEoi, bool *e
   const unsigned long timeval = cfg.rtmo;
   enum gpibHandshakeState gpibState = HANDSHAKE_START;
 
-  bool atnStat = isAsserted(ATN_PIN);  // Capture state of ATN
+//  bool atnStat = isAsserted(ATN_PIN);  // Capture state of ATN
   *eoi = false;
 
   // Wait for interval to expire
@@ -1118,10 +1128,17 @@ enum gpibHandshakeState GPIBbus::readByte(uint8_t *db, bool readWithEoi, bool *e
       }
 
       // ATN unasserted during handshake - not ready yet so abort (and exit ATN loop)
-      if (atnStat && !isAsserted(ATN_PIN)) {
+//      if (atnStat && !isAsserted(ATN_PIN)) {
+//        gpibState = ATN_ASSERTED;
+//        break;
+//      }
+
+      // ATN unasserted during handshake - not ready yet so abort (and exit ATN loop)
+      if (isAsserted(ATN_PIN)) {
         gpibState = ATN_ASSERTED;
         break;
       }
+
     }
 
     if (gpibState == HANDSHAKE_START) {

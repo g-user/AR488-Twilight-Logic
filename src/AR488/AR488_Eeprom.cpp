@@ -2,7 +2,7 @@
 #include <EEPROM.h>
 #include "AR488_Eeprom.h"
 
-/***** AR488_Eeprom.cpp, ver. 0.01.03, 28/04/2025 *****/
+/***** AR488_Eeprom.cpp, ver. 0.01.04, 26/06/2025 *****/
 /*
  * EEPROM functions implementation
  */
@@ -173,12 +173,13 @@ void epErase() {
  */
 void epWriteData(uint8_t cfgdata[], uint16_t cfgsize) {
   uint16_t crc;
-  uint16_t addr = EESTART;
+  int i;
   
   // Load EEPROM data from Flash
   EEPROM.begin(EESIZE);
   // Write data
-  EEPROM.put(addr,cfgdata);
+   for (i=0; i<cfgsize; i++)
+    EEPROM.write(i+EESTART, cfgdata[i]);
   // Write CRC
   crc = getCRC16(cfgdata, cfgsize);
   EEPROM.put(0, crc);
@@ -197,14 +198,15 @@ void epWriteData(uint8_t cfgdata[], uint16_t cfgsize) {
 bool epReadData(uint8_t cfgdata[], uint16_t cfgsize) {
   uint16_t crc1;
   uint16_t crc2;
-  uint16_t addr = EESTART;
+  int i;
 
   // Load EEPROM data from Flash
   EEPROM.begin(EESIZE);
   // Read CRC
   EEPROM.get(0,crc1);
   // Read data
-  EEPROM.get(addr, cfgdata);
+  for (i=0; i<cfgsize; i++)
+    cfgdata[i]=EEPROM.read(i+EESTART);
   EEPROM.end();
   // Get CRC of config
   crc2 = getCRC16(cfgdata, cfgsize);

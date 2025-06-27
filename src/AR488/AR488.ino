@@ -585,6 +585,9 @@ if (lnRdy>0){
       lonMode();
     }else if (gpibBus.isAsserted(ATN_PIN)) {
       attnRequired();
+    }else if (gpibBus.isDeviceAddressedToListen()) {
+      device_listen_h();
+      gpibBus.setControls(DIDS);
     }
 
     // Can't send in LON mode so just clear the buffer
@@ -1625,12 +1628,14 @@ void rst_h() {
   if (isVerb) {
     dataPort.println(F("Reset FAILED."));
   };
-#elif defined (ESP32)
+#elif defined(ESP32)
   ESP.restart();
 #elif defined(ARDUINO_ARCH_RP2040)
   rp2040.reboot();
-#elif defined (__IMXRT1062__) 
+#elif defined(__IMXRT1062__) 
   SCB_AIRCR = 0x05FA0004;
+#elif defined(ARDUINO_UNOR4_MINIMA) || defined (ARDUINO_UNOR4_WIFI)
+  NVIC_SystemReset();
 #else
   // Otherwise restart program (soft reset)
   asm volatile ("  jmp 0");
@@ -1655,14 +1660,10 @@ void spoll_h(char *params) {
   }
 
   // Read parameters
-  if (params == NULL) {
-    // No parameters - trigger addressed device only
+  if (params == NULL) {   // No parameters - trigger addressed device only
     addrs[0] = gpibBus.cfg.paddr;
     j = 1;
-  }
-
-  // ALL parameter given?
-  if (strncasecmp(params, "all", 3) == 0) {
+  } else if (strncasecmp(params, "all", 3) == 0) {   // ALL parameter given
     all = true;
     j = 30;
     if (isVerb) dataPort.println(F("Serial poll of all devices requested..."));
@@ -1964,8 +1965,6 @@ void help_h(char * params) {
  * This is an alias wrapper for ++spoll all
  */
 void aspoll_h() {
-  //  char all[4];
-  //  strcpy(all, "all\0");
   spoll_h((char*)"all");
 }
 
@@ -1986,6 +1985,7 @@ void dcl_h() {
 
 /***** Re-load default configuration *****/
 void default_h(char *params) {
+  #if defined(__AVR__) || defined (ESP32)
   if (params != NULL) {
     if (strncasecmp(params, "wipe", 4) == 0) {
       epErase();
@@ -1994,6 +1994,7 @@ void default_h(char *params) {
       errorMsg(2);
     }
   }
+  #endif
   gpibBus.setDefaultCfg();
 }
 
@@ -2079,29 +2080,16 @@ void verb_h() {
  *  NOTE: some instrument software requires a sepcific version string to ID the interface
  */
 void setvstr_h(char *params) {
-  uint8_t plen;
+  uint8_t plen = strlen(params);
   char idparams[64];
   const char *vstr = "verstr ";
-  plen = strlen(params);
+
+  if (plen > 47) plen = 47;
   memset(idparams, '\0', 64);
-  strlcpy(idparams, vstr, sizeof(vstr));
-  if (plen>47) plen = 47; // Ignore anything over 47 characters
+  strncpy(idparams, vstr, 7);
   strncat(idparams, params, plen);
 
   id_h(idparams);
-  
-/*  
-  if (params != NULL) {
-    len = strlen(params);NON
-    if (len>47) len=47; 
-    memset(AR488.vstr, '\0', 48);
-    strncpy(AR488.vstr, params, len);
-    if (isVerb) {
-      dataPort.print(F("Changed version string to: "));
-      dataPort.println(params);
-    };
-  }
-*/  
 }
 
 
@@ -3185,12 +3173,15 @@ void device_talk_h(){
 /***** Selected Device Clear *****/
 void device_sdc_h() {
   // If being addressed then reset
-  if (isVerb) dataPort.println(F("Resetting..."));
-#ifdef DEBUG_DEVICE_ATN
-  DB_PRINT(F("Reset adressed to me: "),"");
-#endif
-  rst_h();
-  if (isVerb) dataPort.println(F("Reset failed."));
+  #ifdef DEBUG_DEVICE_ATN
+    DB_PRINT(F("SDC requested..."),"");
+  #endif
+  if (isVerb) dataPort.println(F("Clearing..."));
+  flushPbuf();
+  lnRdy = 0;
+  gpibBus.cfg.stat = 0;
+  gpibBus.clearSignal(SRQ_BIT);
+  if (isVerb) dataPort.println(F("Done."));
 }
 
 

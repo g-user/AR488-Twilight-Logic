@@ -4,7 +4,7 @@
 #include "AR488_Config.h"
 //#include <EEPROM.h>
 
-/***** AR488_Eeprom.h, ver. 0.01.03, 28/04/2025 *****/
+/***** AR488_Eeprom.h, ver. 0.01.04, 20/06/2025 *****/
 
 /*
  * EEPROM SIZES:
@@ -16,6 +16,9 @@
  * ATmega4809         256   // Nano Every
  * ESP8266/ESP32     none   // Emulated. 512kb assigned?
  */
+
+
+#if defined (__AVR__) || defined (ESP32)
 
 
 #define EESIZE 256
@@ -68,4 +71,6 @@ void epViewData(Stream& outputStream);
 bool isEepromClear();
 
 
-#endif // AR488_EEPROM_H
+#endif  // defined (__AVR__) || defined (ESP32)
+
+#endif  // AR488_EEPROM_H

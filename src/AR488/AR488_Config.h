@@ -7,7 +7,7 @@
 
 
 /***** Firmware version *****/
-#define FWVER "AR488 GPIB controller, ver. 0.53.14, 18/06/2025"
+#define FWVER "AR488 GPIB controller, ver. 0.53.15, 23/06/2025"
 
 
 /***** BOARD CONFIGURATION *****/
@@ -23,7 +23,7 @@
 /*
  * Uncomment to use custom board layout
  */
-//#define AR488_CUSTOM
+#define AR488_CUSTOM
 
 /*
  * Configure the appropriate board/layout section

@@ -17,7 +17,7 @@ unsigned long int getCRC32(uint8_t bytes[], uint16_t bsize);
 /********************************/
 /***** AVR EEPROM functions *****/
 /********************************/
-#ifdef __AVR__
+#if defined(__AVR__)
 
 /***** Show all bytes of EEPROM data *****/
 

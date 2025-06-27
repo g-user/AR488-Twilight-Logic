@@ -2,7 +2,7 @@
 #include <EEPROM.h>
 #include "AR488_Eeprom.h"
 
-/***** AR488_Eeprom.cpp, ver. 0.01.03, 28/04/2025 *****/
+/***** AR488_Eeprom.cpp, ver. 0.01.05, 26/056/2025 *****/
 /*
  * EEPROM functions implementation
  */
@@ -56,18 +56,17 @@ void epErase() {
 
 /***** Write data to EEPROM (with CRC) *****/
 /*
- * addr = EEPROM address
+ * EESTART = starting EEPROM address for configuration data
  * cfg = config data union object
  * csize = size of config data object
  */
-void epWriteData(uint8_t cfgdata[], uint16_t cfgsize) {
+void epWriteData(uint8_t cfgdata[], size_t cfgsize) {
   uint16_t crc;
-  uint16_t addr = EESTART;
   uint16_t i = 0;
  
   // Write data
   for (i=0; i<cfgsize; i++){
-    EEPROM.update(addr+i,cfgdata[i]);
+    EEPROM.update(i+EESTART,cfgdata[i]);
   }
   // Write CRC
   crc = getCRC16(cfgdata, cfgsize);
@@ -78,23 +77,20 @@ void epWriteData(uint8_t cfgdata[], uint16_t cfgsize) {
 
 /***** Read data from EEPROM (with CRC check) *****/
 /*
- * addr = EEPROM address
+ * EESTART = starting EEPROM address for configuration data
  * cfg = config data union object
  * csize = size of config data object
  */
-bool epReadData(uint8_t cfgdata[], uint16_t cfgsize) {
+bool epReadData(uint8_t cfgdata[], size_t cfgsize) {
   uint16_t crc1;
   uint16_t crc2;
-//  uint16_t addr = EESTART;
-  uint16_t i=0;
 
   // Read CRC
   EEPROM.get(0,crc1);
   // Read data
-  for (i=0;i<cfgsize;i++){
-    cfgdata[i] = EEPROM.read(EESTART+i);
+  for (size_t i=0;i<cfgsize;i++){
+    cfgdata[i] = EEPROM.read(i+EESTART);
   }
-//  EEPROM.get(addr, cfgdata);
   // Get CRC of config
   crc2 = getCRC16(cfgdata, cfgsize);
   if (crc1==crc2) {
@@ -120,9 +116,9 @@ bool isEepromClear(){
 
 #endif
 
-/************************************/
-/***** ESP8266 EEPROM functions *****/
-/************************************/
+/******************************************/
+/***** ESP8266/ESP32 EEPROM functions *****/
+/******************************************/
 #if defined(ESP8266) || defined(ESP32)
 
 /***** Show all bytes of EEPROM data *****/
@@ -167,18 +163,19 @@ void epErase() {
 
 /***** Write data to EEPROM (with CRC) *****/
 /*
- * addr = EEPROM address
+ * EESTART = starting EEPROM address for configurartion data
  * cfg = config data union object
  * csize = size of config data object
  */
-void epWriteData(uint8_t cfgdata[], uint16_t cfgsize) {
+void epWriteData(uint8_t cfgdata[], size_t cfgsize) {
   uint16_t crc;
-  uint16_t addr = EESTART;
-  
+
   // Load EEPROM data from Flash
   EEPROM.begin(EESIZE);
   // Write data
-  EEPROM.put(addr,cfgdata);
+  for (size_t i=0; i<cfgsize; i++) {
+    EEPROM.write(i+EESTART, cfgdata[i]);
+  }
   // Write CRC
   crc = getCRC16(cfgdata, cfgsize);
   EEPROM.put(0, crc);
@@ -190,21 +187,22 @@ void epWriteData(uint8_t cfgdata[], uint16_t cfgsize) {
 
 /***** Read data from EEPROM (with CRC check) *****/
 /*
- * addr = EEPROM address
+ * EESTART = starting EEPROM address for configuration data
  * cfg = config data union object
  * csize = size of config data object
  */
-bool epReadData(uint8_t cfgdata[], uint16_t cfgsize) {
+bool epReadData(uint8_t cfgdata[], size_t cfgsize) {
   uint16_t crc1;
   uint16_t crc2;
-  uint16_t addr = EESTART;
 
   // Load EEPROM data from Flash
   EEPROM.begin(EESIZE);
   // Read CRC
   EEPROM.get(0,crc1);
   // Read data
-  EEPROM.get(addr, cfgdata);
+  for (size_t i=0; i<cfgsize; i++) {
+    cfgdata[i]=EEPROM.read(i+EESTART);
+  }
   EEPROM.end();
   // Get CRC of config
   crc2 = getCRC16(cfgdata, cfgsize);
@@ -243,7 +241,7 @@ bool isEepromClear(){
 
 /***** Generate a CRC *****/
 
-unsigned long int getCRC32(uint8_t bytes[], uint16_t bsize) {
+unsigned long int getCRC32(uint8_t bytes[], size_t bsize) {
 
   const unsigned long crc_table[16] = {
     0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
@@ -253,7 +251,7 @@ unsigned long int getCRC32(uint8_t bytes[], uint16_t bsize) {
   };
   unsigned long crc = ~0L;
   
-  for (uint16_t idx=0; idx<bsize; ++idx) {
+  for (size_t idx=0; idx<bsize; ++idx) {
     crc = crc_table[(crc ^ bytes[idx]) & 0x0f] ^ (crc >> 4);
     crc = crc_table[(crc ^ (bytes[idx] >> 4)) & 0x0f] ^ (crc >> 4);
     crc = ~crc;
@@ -261,11 +259,11 @@ unsigned long int getCRC32(uint8_t bytes[], uint16_t bsize) {
   return crc;
 }
 
-uint16_t getCRC16(uint8_t bytes[], uint16_t bsize){
+uint16_t getCRC16(uint8_t bytes[], size_t bsize){
   uint8_t x;
   uint16_t crc = 0xFFFF;
 
-  for (uint16_t idx=0; idx<bsize; ++idx) {
+  for (size_t idx=0; idx<bsize; ++idx) {
     x = crc >> 8 ^ bytes[idx];
     x ^= x>>4;
     crc = (crc << 8) ^ ((uint16_t)(x << 12)) ^ ((uint16_t)(x <<5)) ^ ((uint16_t)x);

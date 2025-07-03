@@ -114,7 +114,8 @@ enum operatingMode: uint8_t {
 
 
 enum transmitMode: uint8_t {
-  TM_IDLE,
+  TM_CTRL_IDLE,
+  TM_DEVICE_IDLE,
   TM_RECV,
   TM_SEND
 };

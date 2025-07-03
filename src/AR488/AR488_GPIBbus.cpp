@@ -1298,8 +1298,6 @@ enum gpibHandshakeState GPIBbus::writeByte(uint8_t db, bool isLastByte) {
     currentMillis = millis();
   }
 
-  lastWrite = micros();
-
   // Handshake complete
   if (gpibState == HANDSHAKE_COMPLETE) {
     if (cfg.eoi && isLastByte) {

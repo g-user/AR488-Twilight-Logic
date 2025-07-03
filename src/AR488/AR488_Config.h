@@ -7,7 +7,7 @@
 
 
 /***** Firmware version *****/
-#define FWVER "AR488 GPIB controller, ver. 0.53.16, 26/06/2025"
+#define FWVER "AR488 GPIB controller, ver. 0.53.17, 03/07/2025"
 
 
 /***** BOARD CONFIGURATION *****/
@@ -23,37 +23,37 @@
 /*
  * Uncomment to use custom board layout
  */
-#define AR488_CUSTOM
+//#define AR488_CUSTOM
 
 /*
  * Configure the appropriate board/layout section
  * below as required
  */
-#ifdef AR488_CUSTOM
+#if defined(AR488_CUSTOM)
   /* Board layout */
   /*
    * Define board layout in the AR488 CUSTOM LAYOUT
    * section below
    */
 
-#elif __AVR_ATmega328P__
+#elif defined(__AVR_ATmega328P__)
   /*** ATmega328P - UNO R3, Nano ***/
   #define AR488_UNO
   //#define AR488_NANO
   //#define AR488_MCP23S17
 
-#elif __AVR_ATmega328PB__
+#elif defined(__AVR_ATmega328PB__)
   /** ATmega 328PB variant - some clone Nano boards **/
   //#define AR488_UNO
   #define AR488_NANO
   //#define AR488_328PB_ALT
 
-#elif __AVR_ATmega32U4__
+#elif defined(__AVR_ATmega32U4__)
   /** ATmega 32u4 - Micro, Leonardo  **/
   #define AR488_MEGA32U4_MICRO  // Artag's design for Micro board
   //#define AR488_MEGA32U4_LR3  // Leonardo R3 (same pin layout as Uno)
 
-#elif __AVR_ATmega2560__
+#elif defined(__AVR_ATmega2560__)
   /** ATmega2560 - Mega 2560 **/
   #define AR488_MEGA2560_D
   //#define AR488_MEGA2560_E1
@@ -63,9 +63,9 @@
   /** ATmega 644P, ATmega 1284P, e.g. Panduino **/
   #define AR488_MEGA644P_MCGRAW
 
-//#elif __AVR_ATmega4809__
+#elif defined(__AVR_ATmega4809__)
   /** ATmega4809 - Nano Every, UNO WiFi Rev2 **/
-  //#define POE_ETHERNET_GPIB_ADAPTOR
+  #define POE_ETHERNET_GPIB_ADAPTOR
 
 //#elif defined(ESP32)
   /** ESP32 variants **/
@@ -192,24 +192,9 @@
 //#define REMOTE_SIGNAL_PIN 7
 
 
-/***** 8-way address DIP switch *****/
-#define DIP_SWITCH
-#ifdef DIP_SWITCH
-#define DIP_SW_1  A0
-#define DIP_SW_2  A1
-#define DIP_SW_3  A2
-#define DIP_SW_4  A3
-#define DIP_SW_5  A4
-#define DIP_SW_6  A5
-#define DIP_SW_7  A6
-#define DIP_SW_8  A7
-
-#endif
-
 
 /***** Acknowledge interface is ready *****/
 //#define SAY_HELLO
-
 
 
 /***** DEBUG LEVEL OPTIONS *****/

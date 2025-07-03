@@ -8,25 +8,13 @@
 
 
 
-/***** AR488_GPIBbus.cpp, ver. 0.53.04, 13/04/2025 *****/
+/***** AR488_GPIBbus.cpp, ver. 0.53.11, 08/05/2025 *****/
 
 /*********************************************/
 /***** GPIB COMMAND & STATUS DEFINITIONS *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv *****/
 
 #define GPIB_CFG_SIZE 83
-
-/***** Debug Port *****/
-#ifdef DB_SERIAL_ENABLE
-extern Stream &debugPort;
-/* Configured in Config.h */
-//#define DEBUG_GPIBbus_RECEIVE
-//#define DEBUG_GPIBbus_SEND
-//#define DEBUG_GPIBbus_CONTROL
-//#define SN7516X
-/* Configured in Config.h */
-
-#endif
 
 
 /***** Universal Multiline commands (apply to all devices) *****/
@@ -63,6 +51,19 @@ extern Stream &debugPort;
 #define DTAS 0x09  // Device talker active (sending) state
 
 
+/***** BITS ASSIGNED TO GPIB BYTE *****/
+#define IFC_BIT (1 << 0)
+#define NDAC_BIT (1 << 1)
+#define NRFD_BIT (1 << 2)
+#define DAV_BIT (1 << 3)
+#define EOI_BIT (1 << 4)
+#define REN_BIT (1 << 5)
+#define SRQ_BIT (1 << 6)
+#define ATN_BIT (1 << 7)
+#define CTRL_BITS (0xE1)
+#define HSHK_BITS (0x1E)
+#define ALL_BITS (0xFF)
+
 /***** Addressing direction *****/
 #define TONONE 0
 #define TOLISTEN 1
@@ -74,8 +75,7 @@ extern Stream &debugPort;
 #define WITH_EOI true
 
 
-/***** Handshake states *****/
-enum gpibHandshakeStates {
+enum gpibHandshakeState: uint8_t {
   // Common
   HANDSHAKE_START,
   HANDSHAKE_COMPLETE,
@@ -93,29 +93,28 @@ enum gpibHandshakeStates {
 };
 
 
-#define IFC_BIT (1 << 0)
-#define NDAC_BIT (1 << 1)
-#define NRFD_BIT (1 << 2)
-#define DAV_BIT (1 << 3)
-#define EOI_BIT (1 << 4)
-#define REN_BIT (1 << 5)
-#define SRQ_BIT (1 << 6)
-#define ATN_BIT (1 << 7)
-#define CTRL_BITS (0xE1)
-#define HSHK_BITS (0x1E)
-#define ALL_BITS (0xFF)
+enum receiveState: uint8_t {
+  RECEIVE_INIT,     // Initial state
+  RECEIVE_BREAK,    // Receive interrupted by user command
+  RECEIVE_ATN,      // Receive interrupted by ATN
+  RECEIVE_IFC,      // Receive interrupted by IFC
+  RECEIVE_EOI,      // Receive OK, terminated with EOI
+  RECEIVE_ENDCHAR,  // Receive OK, terminated with custom end character
+  RECEIVE_ENDL,     // Receive OK, terminated line of text (CR/LF)
+  RECEIVE_LIMIT,    // Receive max byte count reached
+  RECEIVE_ERR       // Receive timeout or error
+};
 
 
-enum operatingModes {
+enum operatingMode: uint8_t {
   OP_IDLE,
   OP_CTRL,
   OP_DEVI
 };
 
 
-enum transmitModes {
-  TM_CTRL_IDLE,
-  TM_DEVICE_IDLE,
+enum transmitMode: uint8_t {
+  TM_IDLE,
   TM_RECV,
   TM_SEND
 };
@@ -173,8 +172,8 @@ public:
   void startControllerMode();
   void startDeviceMode();
 
-  void setOperatingMode(enum operatingModes mode);
-  void setTransmitMode(enum transmitModes mode);
+  void setOperatingMode(enum operatingMode mode);
+  void setTransmitMode(enum transmitMode mode);
   void assertSignal(uint8_t sig);
   void clearSignal(uint8_t sig);
   void clearAllSignals();
@@ -203,9 +202,9 @@ public:
   void setStatus(uint8_t statusByte);
   bool sendCmd(uint8_t cmdByte);
   bool sendSecondaryCmd(uint8_t paddr, uint8_t saddr, char * data, uint8_t dsize);
-  enum gpibHandshakeStates readByte(uint8_t *db, bool readWithEoi, bool *eoi);
-  enum gpibHandshakeStates writeByte(uint8_t db, bool isLastByte);
-  bool receiveData(Stream &dataStream, bool detectEoi, bool detectEndByte, uint8_t endByte);
+  enum gpibHandshakeState readByte(uint8_t *db, bool readWithEoi, bool *eoi);
+  enum gpibHandshakeState writeByte(uint8_t db, bool isLastByte);
+  enum receiveState receiveData(Stream &dataStream, bool detectEoi, bool detectEndByte, uint8_t endByte);
   void sendData(char *data, uint8_t dsize);
   void clearDataBus();
   void setControlVal(uint8_t value);
@@ -219,7 +218,7 @@ public:
 
   bool addressDevice(uint8_t pri, uint8_t sec, uint8_t dir);
   bool unAddressDevice();
-  bool haveAddressedDevice();
+  uint8_t haveAddressedDevice();
 
   void setSettleRTime(uint16_t t) { settle_r_time = t; }
   void setSettleSTime(uint16_t t) { settle_s_time = t; }

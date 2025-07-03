@@ -14,7 +14,7 @@
 #include "AR488_Eeprom.h"
 
 
-/***** FWVER "AR488 GPIB controller, ver. 0.53.04, 13/04/2025" *****/
+/***** FWVER "AR488 GPIB controller, ver. 0.53.17, 03/07/2025" *****/
 
 /*
   Arduino IEEE-488 implementation by John Chajecki
@@ -109,6 +109,8 @@ const char macro_8 [] PROGMEM = {MACRO_8};
 const char macro_9 [] PROGMEM = {MACRO_9};
 
 
+
+
 /* Macro pointer array */
 const char * const macros[] PROGMEM = {
   startup_macro,
@@ -152,7 +154,7 @@ uint8_t pbPtr = 0;
 /**************************/
 /***** HELP MESASAGES *****/
 /****** vvvvvvvvvvvvv *****/
-
+/*
 static const char cmdHelp[] PROGMEM = {
   "addr:P Display/set device address\n"
   "auto:P Automatically request talk and read response\n"
@@ -203,6 +205,66 @@ static const char cmdHelp[] PROGMEM = {
   "verbose:C Verbose (human readable) mode\n"
   "xdiag:C Bus diagnostics (see the doc)\n"
 };
+*/
+
+
+static const char cmdHelpPrologix[] PROGMEM = {
+  "\nPrologix Compatible Commands:\n"
+  "addr:\tDisplay/set device address\n"
+  "auto:\tAutomatically request talk and read response\n"
+  "clr:\tSend Selected Device Clear to current GPIB address\n"
+  "eoi:\tEnable/disable assertion of EOI signal\n"
+  "eor:\tShow or set end of receive character(s)\n"
+  "eos:\tSpecify GPIB termination character\n"
+  "eot_char:\tSet character to append to USB output when EOT enabled\n"
+  "eot_enable:\tEnable/Disable appending user specified character to USB output on EOI detection\n"
+  "help:\tThis message\n"
+  "ifc:\tAssert IFC signal for 150 miscoseconds - make AR488 controller in charge\n"
+  "llo:\tLocal lockout - disable front panel operation on instrument\n"
+  "loc:\tEnable front panel operation on instrument\n"
+  "lon:\tPut controller in listen-only mode (listen to all traffic)\n"
+  "mode:\tSet the interface mode (1=controller/0=device)\n"
+  "read:\tRead data from instrument\n"
+  "read_tmo_ms:\tRead timeout specified between 1 - 3000 milliseconds\n"
+  "rst:\tReset the controller\n"
+  "savecfg:\tSave configration\n"
+  "spoll:\tSerial poll the addressed host or all instruments\n"
+  "srq:\tReturn status of srq signal (1-srq asserted/0-srq not asserted)\n"
+  "status:\tSet the status byte to be returned on being polled (bit 6 = RQS, i.e SRQ asserted)\n"
+  "trg:\tSend trigger to selected devices (up to 15 addresses)\n"
+  "ver:\tDisplay firmware version\n"
+};
+
+
+static const char cmdHelpExtended[] PROGMEM = {
+  "/nExtended custom commands:"
+  "aspoll:\tSerial poll all instruments (alias: ++spoll all)\n"
+  "dcl:\tSend unaddressed (all) device clear  [power on reset] (is the rst?)\n"
+  "default:\tSet configuration to controller default settings\n"
+  "id:\tShow interface ID information - see also: 'id name'; 'id serial'; 'id verstr'\n"
+  "id name:\tShow/Set the name of the interface\n"
+  "id serial:\tShow/Set the serial number of the interface\n"
+  "id verstr:\tShow/Set the version string sent in reply to ++ver e.g. \"GPIB-USB\"). Max 47 chars, excess truncated.\n"
+  "idn:\tEnable/Disable reply to *idn? (disabled by default)\n"
+  "macro:\tRun a macro (if macro support is compiled)\n"
+  "fndl:\tFind listners\n"
+  "ppoll:\tConduct a parallel poll\n"
+  "ren:\tAssert or Unassert the REN signal\n"
+  "repeat:\tRepeat a given command and return result\n"
+  "secread:\tRead from a secondary address\n"
+  "secsend:\tSend data or command to a secondary address\n"
+  "setvstr:\tDEPRECATED - see id verstr\n"
+  "srqauto:\tAutomatically conduct serial poll when SRQ is asserted\n"
+  "tct:\tSignal remote device to take control\n"
+  "ton:\tPut controller in talk-only mode (send data only)\n"
+  "unl:\tUnlisten the GPIB bus\n"
+  "unt:\tUntalk the GPIB bus"
+  "verbose:\tVerbose (human readable) mode\n"
+  "xdiag:\tBus diagnostics (see the doc)\n"
+};
+
+
+
 
 /***** ^^^^^^^^^^^^^ *****/
 /***** HELP MESSAGES *****/
@@ -329,11 +391,13 @@ USB.serialNumber(serialString);
   #endif
 
   // Initialise serial at the configured baud rate
-  AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);
+  startDataPort(AR_SERIAL_SPEED);
+//  AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);
 
 #ifdef DEBUG_ENABLE
   // Initialise debug port
-  DB_SERIAL_PORT.begin(DB_SERIAL_SPEED);
+//  DB_SERIAL_PORT.begin(DB_SERIAL_SPEED);
+  startDebugPort(DB_SERIAL_SPEED);
 #endif
 
 #ifdef AR_SERIAL_BT_ENABLE
@@ -440,7 +504,7 @@ USB.serialNumber(serialString);
   }
 #endif
 
-  if (gpibBus.cfg.hflags & 0x01) dataPort.print(F("AR488~RDY"));
+  if (gpibBus.cfg.hflags & 0x01) showFlag(F("AR488~RDY"));
 
   dataPort.flush();
 
@@ -505,6 +569,7 @@ if (lnRdy>0){
       if (gpibBus.cfg.amode == 1) {
         gpibBus.addressDevice(gpibBus.cfg.paddr, gpibBus.cfg.saddr, TOTALK);
         errFlg = gpibBus.receiveData(dataPort, gpibBus.cfg.eoi, false, 0);
+        if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
         gpibBus.unAddressDevice();
       }
 
@@ -512,6 +577,7 @@ if (lnRdy>0){
       if (gpibBus.cfg.amode == 2 && isQuery) {
         gpibBus.addressDevice(gpibBus.cfg.paddr, gpibBus.cfg.saddr, TOTALK);
         errFlg = gpibBus.receiveData(dataPort, gpibBus.cfg.eoi, false, 0);
+        if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
         isQuery = false;
         gpibBus.unAddressDevice();
       }
@@ -524,6 +590,7 @@ if (lnRdy>0){
       if (lnRdy==0) {
         if (gpibBus.haveAddressedDevice() == TONONE) gpibBus.addressDevice(gpibBus.cfg.paddr, gpibBus.cfg.saddr, TOTALK);
         errFlg = gpibBus.receiveData(dataPort, readWithEoi, readWithEndByte, endByte);
+        if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
       }
     }
 
@@ -548,6 +615,9 @@ if (lnRdy>0){
       lonMode();
     }else if (gpibBus.isAsserted(ATN_PIN)) {
       attnRequired();
+    }else if (gpibBus.isDeviceAddressedToListen()) {
+      device_listen_h();
+      gpibBus.setControls(DIDS);
     }
 
     // Can't send in LON mode so just clear the buffer
@@ -831,7 +901,7 @@ static cmdRec cmdHidx [] = {
   { "auto",        2, amode_h     },
   { "clr",         2, (void(*)(char*)) clr_h     },
   { "dcl",         2, (void(*)(char*)) dcl_h     },
-  { "default",     3, (void(*)(char*)) default_h },
+  { "default",     3, default_h   },
   { "eoi",         3, eoi_h       },
   { "eor",         3, eor_h       },
   { "eos",         3, eos_h       },
@@ -918,7 +988,7 @@ void sendToInstrument(char *buffr, uint8_t dsize) {
 #endif
 
   // Show handshake flag
-  if (gpibBus.cfg.hflags & 0x04) dataPort.println("Send^OK");
+  if (gpibBus.cfg.hflags & 0x04) showFlag(F("Send^OK"));
 
   // Show a prompt on completion?
   if (isVerb) showPrompt();
@@ -1403,8 +1473,8 @@ void ver_h(char *params) {
 
 /***** Address device to talk and read the sent data *****/
 void read_h(char *params) {
-  uint8_t maxparam = 3;
-  uint8_t pcnt = 0;
+//  uint8_t maxparam = 3;
+//  uint8_t pcnt = 0;
   uint8_t pri = gpibBus.cfg.paddr;
   uint8_t sec = gpibBus.cfg.saddr;
   uint16_t val = 0xFF;
@@ -1473,8 +1543,8 @@ void read_h(char *params) {
   } else {
     // If auto mode is disabled we do a single read
     gpibBus.receiveData(dataPort, readWithEoi, readWithEndByte, endByte);
+    if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
     gpibBus.unAddressDevice();
-    if ( !autoRead && (gpibBus.cfg.hflags & 0x02) ) dataPort.println(F("Read^OK"));
   }
 }
 
@@ -1497,7 +1567,7 @@ void llo_h(char *params) {
     // For 'all' send LLO to the bus without addressing any device
     // Devices will show REM as soon as they are addressed and need to be released with LOC
     if (params != NULL) {
-      if (0 == strncmp(params, "all", 3)) {
+      if (0 == strncasecmp(params, "all", 3)) {
         if (gpibBus.sendCmd(GC_LLO)) {
           if (isVerb) dataPort.println(F("Failed to send universal LLO."));
         }
@@ -1519,7 +1589,7 @@ void loc_h(char *params) {
   // REN *MUST* be asserted (LOW)
   if (digitalRead(REN_PIN)==LOW) {
     if (params != NULL) {
-      if (strncmp(params, "all", 3) == 0) {
+      if (strncasecmp(params, "all", 3) == 0) {
         // Send request to clear all devices to local
         gpibBus.sendAllClear();
       }
@@ -1622,10 +1692,14 @@ void rst_h() {
   if (isVerb) {
     dataPort.println(F("Reset FAILED."));
   };
-#elif defined (ESP32)
+#elif defined(ESP32)
   ESP.restart();
 #elif defined(ARDUINO_ARCH_RP2040)
   rp2040.reboot();
+#elif defined(__IMXRT1062__) 
+  SCB_AIRCR = 0x05FA0004;
+#elif defined(ARDUINO_UNOR4_MINIMA) || defined (ARDUINO_UNOR4_WIFI)
+  NVIC_SystemReset();
 #else
   // Otherwise restart program (soft reset)
   asm volatile ("  jmp 0");
@@ -1638,7 +1712,7 @@ void spoll_h(char *params) {
   char *param;
   uint8_t addrs[15];
   uint8_t sb = 0;
-  enum gpibHandshakeStates state;
+  enum gpibHandshakeState state;
   uint8_t j = 0;
   uint16_t addrval = 0;
   bool all = false;
@@ -1650,12 +1724,10 @@ void spoll_h(char *params) {
   }
 
   // Read parameters
-  if (params == NULL) {
-    // No parameters - trigger addressed device only
+  if (params == NULL) {   // No parameters - trigger addressed device only
     addrs[0] = gpibBus.cfg.paddr;
     j = 1;
-  } else if (strncasecmp(params, "all", 3) == 0) {
-    // ALL parameter given?
+  } else if (strncasecmp(params, "all", 3) == 0) {   // ALL parameter given
     all = true;
     j = 30;
     if (isVerb) dataPort.println(F("Serial poll of all devices requested..."));
@@ -1870,29 +1942,33 @@ void lon_h(char *params) {
 }
 
 
-/***** Show help message *****/
-void help_h(char *params) {
-  char c, t;
+/***** Print help *****/
+bool printHelp(const char * help, char * keyword){
+//  char c, t;
+  char c;
   char token[20];
   uint8_t i;
+  bool found = false;
 
   i = 0;
-  for (size_t k = 0; k < strlen_P(cmdHelp); k++) {
-    c = pgm_read_byte_near(cmdHelp + k);
+  for (size_t k = 0; k < strlen_P(help); k++) {
+    c = pgm_read_byte_near(help + k);
 
 
     if (i < 20) {
       if(c == ':') {
         token[i] = 0;
-        if((params == NULL) || (strcmp(token, params) == 0)) {
+        if((keyword == NULL) || (strcmp(token, keyword) == 0)) {
           dataPort.print(F("++"));
           dataPort.print(token);
-          dataPort.print(c);
+//          dataPort.print(c);
           k++;
+          /*
           t = pgm_read_byte_near(cmdHelp + k);
           dataPort.print(F(" ["));
           dataPort.print(t);
           dataPort.print(F("]"));
+          */
           i = 255; // means we need to print until \n
         }
         
@@ -1907,6 +1983,33 @@ void help_h(char *params) {
       i = 0;
     }
   }
+  return found;
+}
+
+
+
+/***** Show help message *****/
+void help_h(char * params) {
+  char * param;
+  char * keyword;
+  bool found = false;
+
+  if (params != NULL) {
+    param = strtok(params, " ,\t");
+    if (strncasecmp(param, "prologix", 8) == 0) {
+      keyword = strtok(NULL, " ,\t");
+      printHelp(cmdHelpPrologix, keyword);
+    }else if (strncasecmp(param, "extended", 8) == 0) {
+      keyword = strtok(NULL, " ,\t");
+      printHelp(cmdHelpExtended, keyword);
+    }else{
+      printHelp(cmdHelpPrologix, param);
+      if (!found) printHelp(cmdHelpExtended, param);
+    }
+  }else{
+    printHelp(cmdHelpPrologix, NULL);
+    printHelp(cmdHelpExtended, NULL);
+  }  
 }
 
 
@@ -1923,8 +2026,6 @@ void help_h(char *params) {
  * This is an alias wrapper for ++spoll all
  */
 void aspoll_h() {
-  //  char all[4];
-  //  strcpy(all, "all\0");
   spoll_h((char*)"all");
 }
 
@@ -1944,7 +2045,17 @@ void dcl_h() {
 
 
 /***** Re-load default configuration *****/
-void default_h() {
+void default_h(char *params) {
+  #if defined(__AVR__) || defined (ESP32)
+  if (params != NULL) {
+    if (strncasecmp(params, "wipe", 4) == 0) {
+      epErase();
+      dataPort.println(F("EEPROM erased!"));
+    }else{
+      errorMsg(2);
+    }
+  }
+  #endif
   gpibBus.setDefaultCfg();
 }
 
@@ -2029,29 +2140,16 @@ void verb_h() {
  *  NOTE: some instrument software requires a sepcific version string to ID the interface
  */
 void setvstr_h(char *params) {
-  uint8_t plen;
+  uint8_t plen = strlen(params);
   char idparams[64];
   const char *vstr = "verstr ";
-  plen = strlen(params);
+
+  if (plen > 47) plen = 47;
   memset(idparams, '\0', 64);
-  strlcpy(idparams, vstr, sizeof(vstr));
-  if (plen>47) plen = 47; // Ignore anything over 47 characters
+  strncpy(idparams, vstr, 7);
   strncat(idparams, params, plen);
 
   id_h(idparams);
-  
-/*  
-  if (params != NULL) {
-    len = strlen(params);NON
-    if (len>47) len=47; 
-    memset(AR488.vstr, '\0', 48);
-    strncpy(AR488.vstr, params, len);
-    if (isVerb) {
-      dataPort.print(F("Changed version string to: "));
-      dataPort.println(params);
-    };
-  }
-*/  
 }
 
 
@@ -2250,7 +2348,7 @@ void xdiag_h(char *params){
   // Get first parameter (mode = 0 or 1)
   param = strtok(params, " ,\t");
 
-  if ( strncasecmp(param, "pins", 4) ==0) {
+  if (strncasecmp(param, "pins", 4) == 0) {
     printDbPinout();
     printCtrlPinout();
     return;
@@ -2322,8 +2420,8 @@ void printCtrlPinout(){
   printPin(F("NRFD"), NRFD_PIN);
   printPin(F("DAV"), DAV_PIN);
   printPin(F("EOI"), EOI_PIN);
-  printPin(F("SRQ"), SRQ_PIN);
   printPin(F("REN"), REN_PIN);
+  printPin(F("SRQ"), SRQ_PIN);
   printPin(F("ATN"), ATN_PIN);
 }
 
@@ -2371,7 +2469,10 @@ void id_h(char *params) {
 #endif
           memset(gpibBus.cfg.vstr, '\0', 48);
           strncpy(gpibBus.cfg.vstr, datastr, dlen);
-          if (isVerb) dataPort.print(F("VerStr: "));dataPort.println(gpibBus.cfg.vstr);
+          if (isVerb) {
+            dataPort.print(F("VerStr: "));
+            dataPort.println(gpibBus.cfg.vstr);
+          }
         }else{
           if (isVerb) dataPort.println(F("Length of version string must not exceed 48 characters!"));
           errorMsg(2);
@@ -2450,13 +2551,42 @@ void idn_h(char * params){
  * flags & 0x04 = Send^OK
  */
 void hflags_h(char * params) {
-  uint16_t val;
+  uint16_t val = 0;
+  uint16_t cnt = 0;
+  char * param;
   if (params != NULL) {
-    if (notInRange(params, 0, 7, val)) return;
-    gpibBus.cfg.hflags = (uint8_t)val;
+    param = strtok(params, " ,\t");
+    if (notInRange(param, 0, 7, val)) return;
+    if (val) {
+      param = strtok(NULL, " ,\t");
+      if (param) {
+        if (notInRange(param, 1, 7, cnt)) return;
+      }else{
+        cnt = 1;
+      }
+    }
+    gpibBus.cfg.hflags = (uint8_t)val + ((uint8_t)cnt<<5) ;
   }else{
-    dataPort.println(gpibBus.cfg.hflags);
+    dataPort.print(gpibBus.cfg.hflags & 0x1F);
+    if (gpibBus.cfg.hflags > 0x1F) {
+      dataPort.print(',');
+      dataPort.print(gpibBus.cfg.hflags >> 5);
+    }
+    dataPort.println();
   }
+}
+
+
+void showFlag(const __FlashStringHelper* flag){
+  uint8_t cnt = (gpibBus.cfg.hflags & 0xE0) >> 5;
+  if (!cnt) cnt = 1;
+  dataPort.println();
+  while (cnt) {
+    dataPort.print(flag);
+    if (cnt>1) dataPort.print('%');
+    cnt--;
+  }
+  dataPort.println();
 }
 
 
@@ -2485,13 +2615,11 @@ void fndl_h(char *params) {
   uint8_t addrList[15] = {0};
   uint16_t tmo = gpibBus.cfg.rtmo;
   uint8_t acnt = 0;
-//  uint8_t xmit = true;
   uint8_t i = 0;
   uint8_t j = 0;
   uint8_t pri = 0xFF;
   unsigned long range[2] = {0,0};
   bool list = false;
-  bool secfound = false;
 
   // Initialise arrays
   for (int i = 0; i < 15; i++) {
@@ -2504,8 +2632,9 @@ void fndl_h(char *params) {
   // Read parameters
   if (params == NULL) {
     // No parameters given - no action to be taken
-    errorMsg(1);
-    return;
+  //  errorMsg(1);
+  //  return;
+    j = 31; // Same as 'all'
   }
 
   // Is it a range?
@@ -2627,7 +2756,6 @@ void fndl_h(char *params) {
             gpibBus.assertSignal(ATN_BIT);
             gpibBus.writeByte(GC_UNT, false);
           }
-//          delayMicroseconds(50);
         }
 
         gpibBus.clearSignal(ATN_BIT);
@@ -2638,14 +2766,12 @@ void fndl_h(char *params) {
     } // End if NDAC aserted (else)
 
     gpibBus.setControls(CIDS);
-//    delay(50);
     i++;
 
   } // END while
 
   dataPort.println();
   gpibBus.cfg.rtmo = tmo;
-//  if (xmit) gpibBus.sendCmd(GC_UNL);
   gpibBus.setControls(CIDS);
 
 }
@@ -2660,7 +2786,6 @@ void fndl_h(char *params) {
 //void secsend_h(char *params) {
 void send_h(char *params) {
   char * param;
-  char * data;
   uint8_t pri = 0xFF;
   uint8_t sec = 0xFF;
   uint16_t val;
@@ -2708,17 +2833,22 @@ void send_h(char *params) {
 
     }
 
-    gpibBus.unAddressDevice();
+/*
+Serial.println(pri);
+Serial.println(sec);
+Serial.println(param);
+*/
+
+//    gpibBus.unAddressDevice();
     gpibBus.addressDevice(pri, sec, TOLISTEN);
     gpibBus.sendData(param, strlen(param));
 
     if (gpibBus.cfg.amode == 1) {
       gpibBus.addressDevice(pri, sec, TOTALK);
       gpibBus.receiveData(dataPort, gpibBus.cfg.eoi, false, 0);
-//      gpibBus.unAddressDevice();
+      if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
+      gpibBus.unAddressDevice();
     }
-
-    gpibBus.unAddressDevice();
 
   }else{
     errorMsg(1);
@@ -3103,12 +3233,15 @@ void device_talk_h(){
 /***** Selected Device Clear *****/
 void device_sdc_h() {
   // If being addressed then reset
-  if (isVerb) dataPort.println(F("Resetting..."));
-#ifdef DEBUG_DEVICE_ATN
-  DB_PRINT(F("Reset adressed to me: "),"");
-#endif
-  rst_h();
-  if (isVerb) dataPort.println(F("Reset failed."));
+  #ifdef DEBUG_DEVICE_ATN
+    DB_PRINT(F("SDC requested..."),"");
+  #endif
+  if (isVerb) dataPort.println(F("Clearing..."));
+  flushPbuf();
+  lnRdy = 0;
+  gpibBus.cfg.stat = 0;
+  gpibBus.clearSignal(SRQ_BIT);
+  if (isVerb) dataPort.println(F("Done."));
 }
 
 
@@ -3192,7 +3325,7 @@ void device_gtl_h(){
 void lonMode(){
 
   uint8_t db = 0;
-  enum gpibHandshakeStates state;
+  enum gpibHandshakeState state;
   bool eoiDetected = false;
 
   // Set bus for device listner active mode

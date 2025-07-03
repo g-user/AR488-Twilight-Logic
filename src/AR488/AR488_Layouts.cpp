@@ -3,7 +3,7 @@
 #include "AR488_Config.h"
 #include "AR488_Layouts.h"
 
-/***** AR488_Hardware.cpp, ver. 0.53.11, 08/05/2025 *****/
+/***** AR488_Hardware.cpp, ver. 0.53.17, 03/07/2025 *****/
 
 ///=================================================///
 ///       Hardware layout function definitions      ///
@@ -1266,17 +1266,14 @@ void setGpibCtrlDir(uint8_t bits, uint8_t mask) {
 /***** POE_ETHERNET_GPIB_ADAPTOR *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
 #ifdef POE_ETHERNET_GPIB_ADAPTOR
-
-////////// UNTESTED //////////
-
-/***** KOFEN's POE Ethernet Gpib Adaptor pinout *****/
+/***** Control pin map *****/
 /*
   Data pin map
   ------------
   DIO1_PIN  22 : GPIB 1  : PD0
   DIO2_PIN  23 : GPIB 2  : PD1
   DIO3_PIN  24 : GPIB 3  : PD2
-  DIO4_PIN  24 : GPIB 4  : PD3
+  DIO4_PIN  25 : GPIB 4  : PD3
   DIO5_PIN  26 : GPIB 13 : PD4
   DIO6_PIN  27 : GPIB 14 : PD5
   DIO7_PIN  28 : GPIB 15 : PD6
@@ -1284,30 +1281,60 @@ void setGpibCtrlDir(uint8_t bits, uint8_t mask) {
 
   Control pin map
   ---------------
-  IFC_PIN   18 : GPIB 9  : PC4 : b0
-  NDAC_PIN  17 : GPIB 8  : PC3 : b1
-  NRFD_PIN  16 : GPIB 7  : PC2 : b2
-  DAV_PIN   15 : GPIB 6  : PC1 : b3
-  EOI_PIN   14 : GPIB 5  : PC0 : b4
-  SRQ_PIN   19 : GPIB 10 : PC5 : b5
-  REN_PIN   21 : GPIB 17 : PC7 : b6
+  IFC_PIN   18 : GPIB  9 : PC4 : b0
+  NDAC_PIN  17 : GPIB  8 : PC3 : b1
+  NRFD_PIN  16 : GPIB  7 : PC2 : b2
+  DAV_PIN   15 : GPIB  6 : PC1 : b3
+  EOI_PIN   14 : GPIB  5 : PC0 : b4
+  REN_PIN   21 : GPIB 17 : PC7 : b5
+  SRQ_PIN   19 : GPIB 10 : PC5 : b6
   ATN_PIN   20 : GPIB 11 : PC6 : b7
 
   Bits control lines as follows: 7-ATN_PIN, 6-SRQ_PIN, 5-REN_PIN, 4-EOI_PIN, 3-DAV_PIN, 2-NRFD_PIN, 1-NDAC_PIN, 0-IFC_PIN
-    bits (databits) : State - 0=LOW, 1=HIGH/INPUT_PULLUP; Direction - 0=input, 1=output;
-    mask (mask)     : 0=unaffected, 1=enabled
+    bits : 0=LOW, 1=HIGH
+    mask : 0=unaffected, 1=affected
 */
+
+
+uint8_t readPortPullupReg(PORT_t port){
+  uint8_t reg = 0;
+  reg |= (port.PIN0CTRL & PORT_PULLUPEN_bm) >> 3;
+  reg |= (port.PIN1CTRL & PORT_PULLUPEN_bm) >> 2;
+  reg |= (port.PIN2CTRL & PORT_PULLUPEN_bm) >> 1;
+  reg |= (port.PIN3CTRL & PORT_PULLUPEN_bm);
+  reg |= (port.PIN4CTRL & PORT_PULLUPEN_bm) << 1;
+  reg |= (port.PIN5CTRL & PORT_PULLUPEN_bm) << 2;
+  reg |= (port.PIN6CTRL & PORT_PULLUPEN_bm) << 3;
+  reg |= (port.PIN7CTRL & PORT_PULLUPEN_bm) << 4;
+  return reg;
+}
+
+
+void setPortPullupBits(PORT_t port, uint8_t reg){
+  port.PIN0CTRL |= ((reg<<3) & PORT_PULLUPEN_bm);
+  port.PIN1CTRL |= ((reg<<2) & PORT_PULLUPEN_bm);
+  port.PIN2CTRL |= ((reg<<1) & PORT_PULLUPEN_bm);
+  port.PIN3CTRL |= (reg & PORT_PULLUPEN_bm);
+  port.PIN4CTRL |= ((reg>>1) & PORT_PULLUPEN_bm);
+  port.PIN5CTRL |= ((reg>>2) & PORT_PULLUPEN_bm);
+  port.PIN6CTRL |= ((reg>>3) & PORT_PULLUPEN_bm);
+  port.PIN7CTRL |= ((reg>>4) & PORT_PULLUPEN_bm);
+  
+}
+
+
+/***** Set the GPIB data bus to input pullup *****/
 
 void readyGpibDbus() {
   // Set data pins to input
-  PORTD.DIR = 0b00000000;
-  for (uint8_t i=1; i<8; i++){
-    (&(PORTD).PIN0CTRL)[i] |= PORT_PULLUPEN_bm;
-  }
+  PORTD.DIR &= 0b00000000;
+  // Set PORTD bits to input_pullup
+  setPortPullupBits(PORTD, 0b11111111);
 }
 
 
 /***** Read the GPIB data bus wires to collect the byte of data *****/
+
 uint8_t readGpibDbus() {
   // Read the byte of data on the bus
   return ~PORTD.IN;
@@ -1315,47 +1342,14 @@ uint8_t readGpibDbus() {
 
 
 /***** Set the GPIB data bus to output and with the requested byte *****/
+
 void setGpibDbus(uint8_t db) {
+
   // Set data pins as outputs
-  // GPIB states are inverted
-  for (uint8_t i=1; i<8; i++){
-    (&(PORTD).PIN0CTRL)[i] &= ~PORT_PULLUPEN_bm;  // Disable pull-ups
-  }
-  PORTD.DIR = 0b11111111;
+  PORTD.DIR |= 0b11111111;
+
+  // Set data bus (GPIB states are inverted)
   PORTD.OUT = ~db;
-}
-
-
-void setGpibCtrlState(uint8_t bits, uint8_t mask) {
-
-  // PORTC all bits
-  uint8_t portCb = ((reverseBits(bits & 0x1F)) >> 3 ) + ((bits & 0xC0) >> 1) + ((bits & 0x20) << 1);
-  uint8_t portCm = ((reverseBits(mask & 0x1F)) >> 3 ) + ((mask & 0xC0) >> 1) + ((mask & 0x20) << 1);
-
-  // Set pin states using mask
-
-  PORTC.OUT = ( (PORTC.OUT & ~portCm) | (portCb & portCm) );
-
-}
-
-
-void setGpibCtrlDir(uint8_t bits, uint8_t mask) {
-
-  uint8_t portCb = ((reverseBits(bits & 0x1F)) >> 3 ) + ((bits & 0xC0) >> 1) + ((bits & 0x20) << 1);
-  uint8_t portCm = ((reverseBits(mask & 0x1F)) >> 3 ) + ((mask & 0xC0) >> 1) + ((mask & 0x20) << 1);
-
-  uint8_t cmask = (portCb & portCm);
-
-  PORTC.DIR = ( (PORTC.DIR & ~portCm) | (portCb & portCm) );
-
-  for (uint8_t i=1; i<8; i++){
-    if (cmask & (1 << i)) {
-      (&(PORTD).PIN0CTRL)[i] &= ~PORT_PULLUPEN_bm; // Disable pull-up
-    }else{
-      (&(PORTD).PIN0CTRL)[i] |= PORT_PULLUPEN_bm; // Enable pull-up
-    }
-  }
-
 }
 
 
@@ -1367,7 +1361,36 @@ uint8_t reverseBits(uint8_t dbyte) {
    return dbyte;
 }
 
-////////// UNTESTED //////////
+
+uint8_t bitsToPort(uint8_t bits){
+  // PORT C - keep bits 0-4, rotate bit 5 right 3 positions, bit 6 & 7 left 1 position on register
+  return (reverseBits(bits & 0x1F) >> 3) | ((bits & 0x20) << 2) | ((bits & 0x40) >> 1) | ((bits & 0x80) >> 1);
+}
+
+
+void setGpibCtrlState(uint8_t bits, uint8_t mask) {
+  if (!mask) return;  // Empty mask does nothing!
+  uint8_t portCb = bitsToPort(bits);
+  uint8_t portCm = bitsToPort(mask);  
+
+  // Set pin states using mask
+  PORTC.OUT = ( (PORTC.OUT & ~portCm) | (portCb & portCm) );
+}
+
+
+void setGpibCtrlDir(uint8_t bits, uint8_t mask) {
+  uint8_t portCb = bitsToPort(bits);
+  uint8_t portCm = bitsToPort(mask);  
+
+  // Set pin direction registers using mask
+  PORTC.DIR = ( (PORTC.DIR & ~portCm) | (portCb & portCm) );
+
+  // Set inputs to input_pullup, outputs  to output
+  uint8_t reg = (readPortPullupReg(PORTC) & ~portCm);
+  uint8_t toset = (~portCb & portCm);
+  reg |= toset;
+  setPortPullupBits(PORTC, reg);
+}
 
 #endif  // POE_ETHERNET_GPIB_ADAPTOR
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^ *****/

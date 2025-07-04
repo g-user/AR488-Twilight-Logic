@@ -84,7 +84,9 @@
   #include "USBCDC.h"
   USBCDC USBSerial(0);
   #ifdef DEBUG_ENABLE
-    USBCDC USBDebugSerial(1);
+    #ifdef ESP32_Wilhelm_AR488_ESP32S2_2ndCdcForDebug
+      USBCDC USBDebugSerial(1);
+    #endif
   #endif
   
   #include "esp_mac.h"

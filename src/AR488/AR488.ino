@@ -82,7 +82,11 @@
 #if AR_SERIAL_PORT_USE_USBSerial==1
   #include "USB.h"
   #include "USBCDC.h"
-  USBCDC USBSerial;
+  USBCDC USBSerial(0);
+  #ifdef DEBUG_ENABLE
+    USBCDC USBDebugSerial(1);
+  #endif
+  
   #include "esp_mac.h"
 #endif
 
@@ -372,8 +376,24 @@ void setup() {
   // Initialise parse buffer
   flushPbuf();
 
+  // Initialise serial at the configured baud rate
+  startDataPort(AR_SERIAL_SPEED);
+//  AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);
 
-  #if AR_SERIAL_PORT_USE_USBSerial==1
+#ifdef DEBUG_ENABLE
+  // Initialise debug port
+//  DB_SERIAL_PORT.begin(DB_SERIAL_SPEED);
+  startDebugPort(DB_SERIAL_SPEED);
+#endif
+
+#if AR_SERIAL_PORT_USE_USBSerial==1
+
+  //fore re-enumeration
+  pinMode(20, OUTPUT);
+  digitalWrite(20, LOW);
+  delay(100); //some say 5ms is enougth, some code on the web uses 50... here it's 100 we can.
+  
+
   USB.firmwareVersion(FWVER_USB);
   USB.manufacturerName("Twilight-Logic");
   USB.productName("AR488");
@@ -386,20 +406,11 @@ void setup() {
     sprintf(serialString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   }
 
-USB.serialNumber(serialString);
-    USB.begin();
-  #endif
+  USB.serialNumber(serialString);
 
-  // Initialise serial at the configured baud rate
-  startDataPort(AR_SERIAL_SPEED);
-//  AR_SERIAL_PORT.begin(AR_SERIAL_SPEED);
-
-#ifdef DEBUG_ENABLE
-  // Initialise debug port
-//  DB_SERIAL_PORT.begin(DB_SERIAL_SPEED);
-  startDebugPort(DB_SERIAL_SPEED);
+  USB.begin();
 #endif
-
+  
 #ifdef AR_SERIAL_BT_ENABLE
   // If enabled, initialise Bluetooth
   /* If its the same interface as AR_SERIAL_PORT then there will be

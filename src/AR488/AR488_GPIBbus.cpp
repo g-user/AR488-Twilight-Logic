@@ -686,7 +686,7 @@ enum receiveState GPIBbus::receiveData(Stream &dataStream, bool detectEoi, bool 
 
   // Verbose timeout error
 #ifdef DEBUG_GPIBbus_RECEIVE
-  if (state != HANDSHAKE_COMPLETE) {
+  if (hstate != HANDSHAKE_COMPLETE) {
     DB_PRINT(F("Timeout waiting for sender!"), "");
     DB_PRINT(F("Timeout waiting for transfer to complete!"), "");
   }

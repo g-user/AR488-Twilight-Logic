@@ -130,10 +130,17 @@
 #endif
 
 /***** Debug port *****/
-//#define DEBUG_ENABLE
+#define DEBUG_ENABLE
 #ifdef DEBUG_ENABLE
   // Serial port device
-  #define DB_SERIAL_PORT Serial
+  #ifdef ESP32_Wilhelm_AR488_ESP32S2_R4
+    extern USBCDC USBDebugSerial;
+    #define DB_SERIAL_PORT USBDebugSerial
+
+  #else
+    #define DB_SERIAL_PORT Serial
+  #endif
+  
   // #define DB_SERIAL_SWPORT
   // Set port operating speed
   #define DB_SERIAL_SPEED 115200
@@ -240,18 +247,18 @@
   // Main module
   //#define DEBUG_SERIAL_INPUT    // serialIn_h(), parseInput_h()
   //#define DEBUG_CMD_PARSER      // getCmd()
-  //#define DEBUG_SEND_TO_INSTR   // sendToInstrument();
-  //#define DEBUG_SPOLL           // spoll_h()
-  //#define DEBUG_DEVICE_ATN      // attnRequired()
-  //#define DEBUG_IDFUNC          // ID command
+  #define DEBUG_SEND_TO_INSTR   // sendToInstrument();
+  #define DEBUG_SPOLL           // spoll_h()
+  #define DEBUG_DEVICE_ATN      // attnRequired()
+  #define DEBUG_IDFUNC          // ID command
 
   // AR488_GPIBbus module
-  //#define DEBUG_GPIBbus_RECEIVE // GPIBbus::receiveData(), GPIBbus::readByte()
-  //#define DEBUG_GPIBbus_SEND    // GPIBbus::sendData()
-  //#define DEBUG_GPIBbus_CONTROL // GPIBbus::setControls() 
-  //#define DEBUG_GPIB_COMMANDS   // GPIBbus::sendCDC(), GPIBbus::sendLLO(), GPIBbus::sendLOC(), GPIBbus::sendGTL(), GPIBbus::sendMSA() 
-  //#define DEBUG_GPIB_ADDRESSING // GPIBbus::sendMA(), GPIBbus::sendMLA(), GPIBbus::sendUNT(), GPIBbus::sendUNL() 
-  //#define DEBUG_GPIB_DEVICE     // GPIBbus::unAddressDevice(), GPIBbus::addressDevice
+  #define DEBUG_GPIBbus_RECEIVE // GPIBbus::receiveData(), GPIBbus::readByte()
+  #define DEBUG_GPIBbus_SEND    // GPIBbus::sendData()
+  #define DEBUG_GPIBbus_CONTROL // GPIBbus::setControls() 
+  #define DEBUG_GPIB_COMMANDS   // GPIBbus::sendCDC(), GPIBbus::sendLLO(), GPIBbus::sendLOC(), GPIBbus::sendGTL(), GPIBbus::sendMSA() 
+  #define DEBUG_GPIB_ADDRESSING // GPIBbus::sendMA(), GPIBbus::sendMLA(), GPIBbus::sendUNT(), GPIBbus::sendUNL() 
+  #define DEBUG_GPIB_DEVICE     // GPIBbus::unAddressDevice(), GPIBbus::addressDevice
   
   // GPIB layout
   //#define DEBUG_LAYOUT

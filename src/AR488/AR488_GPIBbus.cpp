@@ -911,8 +911,8 @@ void GPIBbus::setControls(uint8_t state) {
 
     case CLAS:  // Controller - read data bus
       // Set state for receiving data
-      clearSignal(ATN_BIT);
       setTransmitMode(TM_RECV);
+      clearSignal(ATN_BIT);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE, LOW); // NDAC NRFD -> outputs
 #endif

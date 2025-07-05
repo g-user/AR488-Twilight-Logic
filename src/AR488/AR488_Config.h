@@ -255,6 +255,7 @@
   // Main module
   //#define DEBUG_SERIAL_INPUT    // serialIn_h(), parseInput_h()
   //#define DEBUG_CMD_PARSER      // getCmd()
+  //#define DEBUG_READ //read_h()
   //#define DEBUG_SEND_TO_INSTR   // sendToInstrument();
   //#define DEBUG_SPOLL           // spoll_h()
   //#define DEBUG_DEVICE_ATN      // attnRequired()

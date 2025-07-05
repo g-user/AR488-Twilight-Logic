@@ -852,20 +852,6 @@ bool isIdnQuery(char *buffr) {
   return false;
 }
 
-
-/***** ++read command detected? *****/
-bool isRead(char *buffr) {
-  char cmd[4];
-  // Copy 2nd to 5th character
-  for (int i = 2; i < 6; i++) {
-    cmd[i - 2] = buffr[i];
-  }
-  // Compare with 'read'
-  if (strncmp(cmd, "read", 4) == 0) return true;
-  return false;
-}
-
-
 /***** Is the parameter a number *****/
 bool isNumber(char *numstr){
   uint8_t numlen = strlen(numstr);
@@ -1500,52 +1486,68 @@ void read_h(char *params) {
   // Read any parameters
   if (params != NULL) {
 
-    // 1st parameter ( eoi, terminator character or address value ? )
+    int numParams=0;
     param = strtok(params, " ,\t");
-    if (isNumber(param)) {
-      // Primary address in range ?
-      val = strtoul(param, NULL, 10);
-      if (val>30) {
+    while (param) {
+      param = strtok(NULL, " ,\t");
+      numParams++;
+    }
+
+#ifdef DEBUG_CMD_PARSER
+  DB_PRINT(F("parameters: "), numParams);
+#endif
+    
+    if (numParams==1) {
+      // Check for eoi or terminator character
+      if (strlen(params) > 3) {
         errorMsg(2);
         return;
+      } else if (strncasecmp(params, "eoi", 3) == 0) { // Read with eoi detection
+        readWithEoi = true;
+      } else { // Assume ASCII character given and convert to an 8 bit byte
+        readWithEndByte = true;
+        endByte = atoi(params);
       }
-      pri = (uint8_t)val;
-
-      // 2nd parameter ( * or address value )
-      param = strtok(NULL, " ,\t");
+    } else if (numParams==3) {
+       // 1st parameter ( eoi, terminator character or address value ? )
+      param = strtok(params, " ,\t");
       if (isNumber(param)) {
+        // Primary address in range ?
         val = strtoul(param, NULL, 10);
-        if (val<31) val = val + 0x60;
-        if (val<0x60 || val>0x7E) {
+        if (val>30) {
           errorMsg(2);
           return;
         }
-        sec = (uint8_t)val;
-
-        // 3rd parameter
+        pri = (uint8_t)val;
+  
+        // 2nd parameter ( * or address value )
         param = strtok(NULL, " ,\t");
-
-      }else{
-        sec = 0xFF;
-      }
-
-    }
-    
-    // Check for eoi or terminator character
-    if (strlen(param) > 3) {
-      errorMsg(2);
-      return;
-    } else if (strncasecmp(params, "eoi", 3) == 0) { // Read with eoi detection
-      readWithEoi = true;
-    } else { // Assume ASCII character given and convert to an 8 bit byte
-      readWithEndByte = true;
-      endByte = atoi(param);
+        if (isNumber(param)) {
+          val = strtoul(param, NULL, 10);
+          if (val<31) val = val + 0x60;
+          if (val<0x60 || val>0x7E) {
+            errorMsg(2);
+            return;
+          }
+          sec = (uint8_t)val;
+  
+          // 3rd parameter
+          param = strtok(NULL, " ,\t");
+  
+        }else{
+          sec = 0xFF;
+        }
+  
+      }   
+    } else {
+        errorMsg(2);
     }
   }
-
-//DB_PRINT(F("readWithEoi:     "), readWithEoi);
-//DB_PRINT(F("readWithEndByte: "), readWithEndByte);
-
+  
+#ifdef DEBUG_CMD_PARSER
+  DB_PRINT(F("readWithEoi:     "), readWithEoi);
+  DB_PRINT(F("readWithEndByte: "), readWithEndByte);
+#endif
   // Address device to talk
   if (gpibBus.haveAddressedDevice() != TOTALK) gpibBus.addressDevice(pri, sec, TOTALK);
 

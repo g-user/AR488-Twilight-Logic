@@ -6,7 +6,7 @@
 #include "AR488_Config.h"
 
 
-/***** AR488_Hardware.h, ver. 0.53.04, 13/04/2025 *****/
+/***** AR488_Hardware.h, ver. 0.53.17, 03/07/2025 *****/
 
 
 ///=================================///
@@ -173,7 +173,7 @@
 #define DIO8_PIN  6   /* GPIB 16 : PORTD bit 7 */
 
 #define IFC_PIN   4   /* GPIB 9  : PORTD bit 4 */
-#define NDAC_PIN  A3  /* GPIB 8  : PORTF bit 4   fast control pins assigned to same port */
+#define NDAC_PIN  A3  /* GPIB 8  : PORTF bit 4 */
 #define NRFD_PIN  A2  /* GPIB 7  : PORTF bit 5 */
 #define DAV_PIN   A1  /* GPIB 6  : PORTF bit 6 */
 #define EOI_PIN   A0  /* GPIB 5  : PORTF bit 7 */
@@ -193,7 +193,6 @@
 /***** vvvvvvvvvvvvvvvvvvvvvvvvvvvvv *****/
 #ifdef AR488_MEGA32U4_LR3
 
-/***** NOTE: LEONARDO R3 pinout last updated 06/04/2020 *****/
 #define DIO1_PIN  A0  /* GPIB 1  : PORTF bit 7 */
 #define DIO2_PIN  A1  /* GPIB 2  : PORTF bit 6 */
 #define DIO3_PIN  A2  /* GPIB 3  : PORTF bit 5 */
@@ -347,10 +346,49 @@ uint8_t getMcpIntAReg();
 
 
 
+/*************************************/
+/***** POE_ETHERNET_GPIB_ADAPTOR *****/
+/***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
+#ifdef POE_ETHERNET_GPIB_ADAPTOR
+
+uint8_t reverseBits(uint8_t dbyte);
+uint8_t readPortPullupReg(PORT_t port);
+void setPortPullupBits(PORT_t port, uint8_t reg);
+
+/***** KOFEN's POE Ethernet Gpib Adaptor pinout *****/
+#define DIO1_PIN  22  /* GPIB 1  : PORTD bit 0 */
+#define DIO2_PIN  23  /* GPIB 2  : PORTD bit 1 */
+#define DIO3_PIN  24  /* GPIB 3  : PORTD bit 2 */
+#define DIO4_PIN  24  /* GPIB 4  : PORTD bit 3 */
+#define DIO5_PIN  26  /* GPIB 13 : PORTD bit 4 */
+#define DIO6_PIN  27  /* GPIB 14 : PORTD bit 5 */
+#define DIO7_PIN  28  /* GPIB 15 : PORTD bit 4 */
+#define DIO8_PIN  29  /* GPIB 16 : PORTD bit 5 */
+
+#define IFC_PIN   18  /* GPIB 9  : PORTC bit 0 */
+#define NDAC_PIN  17  /* GPIB 8  : PORTC bit 1 */
+#define NRFD_PIN  16  /* GPIB 8  : PORTC bit 2 */
+#define DAV_PIN   15  /* GPIB 6  : PORTC bit 3 */
+#define EOI_PIN   14  /* GPIB 5  : PORTC bit 4 */
+#define REN_PIN   21  /* GPIB 17 : PORTC bit 5 */
+#define SRQ_PIN   19  /* GPIB 10 : PORTC bit 6 */
+#define ATN_PIN   20  /* GPIB 11 : PORTC bit 7 */
+
+#endif  // POE_ETHERNET_GPIB_ADAPTOR
+/***** ^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
+/***** POE_ETHERNET_GPIB_ADAPTOR *****/
+/*************************************/
+
+
+
 /***********************************/
 /***** ESP32 LAYOUT DEFINITION *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvv *****/
 #ifdef ESP32_DEVKIT1_WROOM_32
+
+// Pin numbers represent GPIOnum
+
+#define ESP32_FUNCTIONS
 
 #define DIO1_PIN  32   /* GPIB 1  */
 #define DIO2_PIN  33   /* GPIB 2  */
@@ -552,6 +590,59 @@ uint8_t getMcpIntAReg();
 /***** ESP32_Wilhelm_AR488_ESP32S2_Rx LAYOUT DEFINITIONS *****/
 /***********************************************/
 
+/***********************************************/
+/***** ESP32_Wilhelm_AR488_ESP32S2_Rx LAYOUT DEFINITIONS *****/
+/***** vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv *****/
+#ifdef ESP32_Wilhelm_AR488_ESP32S2_R4
+#define DIO1_PIN   8    /* GPIB  8 */
+#define DIO2_PIN   9    /* GPIB  9 */
+#define DIO3_PIN   10   /* GPIB 10 */
+#define DIO4_PIN   11   /* GPIB 11 */
+#define DIO5_PIN   12   /* GPIB 12 */
+#define DIO6_PIN   13   /* GPIB 13 */
+#define DIO7_PIN   14   /* GPIB 14 */
+#define DIO8_PIN   15   /* GPIB 15 */
+
+#define IFC_PIN    38   /* GPIB 34 */
+#define NDAC_PIN   33   /* GPIB 33 */
+#define NRFD_PIN   34   /* GPIB 34 */
+#define DAV_PIN    40   /* GPIB 40 */
+#define EOI_PIN    35   /* GPIB 35 */
+
+#define SRQ_PIN    37   /* GPIB 37 */
+#define REN_PIN    26   /* GPIB 21 */
+#define ATN_PIN    36   /* GPIB 36 */
+
+#endif // ESP32_Wilhelm_AR488_ESP32S2_R4
+
+#ifdef ESP32_Wilhelm_AR488_ESP32S2_R5
+
+#define DIO1_PIN   8    /* GPIB  8 */
+#define DIO2_PIN   9    /* GPIB  9 */
+#define DIO3_PIN   10   /* GPIB 10 */
+#define DIO4_PIN   11   /* GPIB 11 */
+#define DIO5_PIN   12   /* GPIB 12 */
+#define DIO6_PIN   13   /* GPIB 13 */
+#define DIO7_PIN   14   /* GPIB 14 */
+#define DIO8_PIN   15   /* GPIB 15 */
+
+#define IFC_PIN     4   /* GPIB  4 */
+#define NDAC_PIN   33   /* GPIB 33 */
+#define NRFD_PIN   34   /* GPIB 34 */
+#define DAV_PIN     5   /* GPIB  5 */
+#define EOI_PIN    35   /* GPIB 35 */
+
+#define SRQ_PIN    37   /* GPIB 37 */
+#define REN_PIN    21   /* GPIB 21 */
+#define ATN_PIN    36   /* GPIB 36 */
+
+#endif // ESP32_Wilhelm_AR488_ESP32S2_R5
+/***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
+/***** ESP32_Wilhelm_AR488_ESP32S2_Rx LAYOUT DEFINITIONS *****/
+/***********************************************/
+
+
+
 /***************************************/
 /***** RAS PICO LAYOUT 1 DEFINITION *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvvvv *****/
@@ -650,13 +741,34 @@ void gpioFuncList();
 
 
 /**************************************/
+/***** ESP32 DEFINITIONS SECTION *****/
+/***** vvvvvvvvvvvvvvvvvvvvvvvvvv *****/
+#ifdef ESP32_FUNCTIONS
+
+//#include <driver/gpio.h>
+#include <esp32-hal-gpio.h>
+#include <esp32-hal-matrix.h>
+#include <esp32/rom/gpio.h>
+#include <hal/gpio_hal.h>
+#include <soc/soc.h>
+
+unsigned long setRegisterMask(const uint8_t bus[]);
+
+#endif  // ESP32_FUNCTIONS
+/***** ^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
+/***** GLOBAL DEFINITIONS SECTION *****/
+/**************************************/
+
+
+
+/**************************************/
 /***** GLOBAL DEFINITIONS SECTION *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvvv *****/
 
 void readyGpibDbus();
 uint8_t readGpibDbus();
 void setGpibDbus(uint8_t db);
-//oid setGpibState(uint8_t bits, uint8_t mask, uint8_t mode);
+//void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode);
 void setGpibCtrlState(uint8_t bits, uint8_t mask);
 void setGpibCtrlDir(uint8_t bits, uint8_t mask);
 uint8_t getGpibPinState(uint8_t pin);
@@ -669,8 +781,6 @@ uint8_t getGpibPinState(uint8_t pin);
 #if defined(RAS_PICO_L1) || defined(RAS_PICO_L2)
   void initRpGpioPins();
 #endif
-
-
 
 
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/

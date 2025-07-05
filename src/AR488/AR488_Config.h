@@ -7,9 +7,8 @@
 
 
 /***** Firmware version *****/
-#define FWVER "AR488 GPIB controller, ver. 0.53.04 (JW), 13/04/2025"
+#define FWVER "AR488 GPIB controller, ver. 0.53.17 (JW), 03/07/2025"
 #define FWVER_USB 0x0053
-
 
 /***** BOARD CONFIGURATION *****/
 /*
@@ -30,7 +29,7 @@
  * Configure the appropriate board/layout section
  * below as required
  */
-#ifdef AR488_CUSTOM
+#if defined(AR488_CUSTOM)
   /* Board layout */
   /*
    * Define board layout in the AR488 CUSTOM LAYOUT
@@ -39,40 +38,39 @@
   /* Default serial port type */
   #define AR_SERIAL_TYPE_HW
 
-/*** UNO and NANO boards ***/
-#elif __AVR_ATmega328P__
-  /* Board/layout selection */
+#elif defined(__AVR_ATmega328P__)
+  /*** ATmega328P - UNO R3, Nano ***/
   #define AR488_UNO
   //#define AR488_NANO
   //#define AR488_MCP23S17
 
-/*** MEGA 32U4 based boards (Micro, Leonardo) ***/
-#elif __AVR_ATmega32U4__
-  /*** Board/layout selection ***/
+#elif defined(__AVR_ATmega328PB__)
+  /** ATmega 328PB variant - some clone Nano boards **/
+  //#define AR488_UNO
+  #define AR488_NANO
+  //#define AR488_328PB_ALT
+
+#elif defined(__AVR_ATmega32U4__)
+  /** ATmega 32u4 - Micro, Leonardo  **/
   #define AR488_MEGA32U4_MICRO  // Artag's design for Micro board
   //#define AR488_MEGA32U4_LR3  // Leonardo R3 (same pin layout as Uno)
-  
-/*** MEGA 2560 board ***/
-#elif __AVR_ATmega2560__
-  /*** Board/layout selection ***/
+
+#elif defined(__AVR_ATmega2560__)
+  /** ATmega2560 - Mega 2560 **/
   #define AR488_MEGA2560_D
   //#define AR488_MEGA2560_E1
   //#define AR488_MEGA2560_E2
 
-/***** Panduino Mega 644 or Mega 1284 board *****/
 #elif defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)
-  /* Board/layout selection */
+  /** ATmega 644P, ATmega 1284P, e.g. Panduino **/
   #define AR488_MEGA644P_MCGRAW
 
-/***** Pololu 328PB board *****/
-#elif __AVR_ATmega328PB__
-  /* Board/layout selection */
-  //#define AR488_UNO
-  #define AR488_328PB_ALT
+#elif defined(__AVR_ATmega4809__)
+  /** ATmega4809 - Nano Every, UNO WiFi Rev2 **/
+  #define POE_ETHERNET_GPIB_ADAPTOR
 
-/***** ESP32 boards *****/
 #elif defined(ESP32)
-  /* Board/layout selection */
+  /** ESP32 variants **/
   #define NON_ARDUINO   // MUST BE DEFINED!
   //#define ESP32_DEVKIT1_WROOM_32
   // David Douard / Johann Wilhelm board layouts
@@ -82,17 +80,17 @@
   //#define ESP32_S2_161
   
   #define ESP32_Wilhelm_AR488_ESP32S2_R4
+  //#define ESP32_Wilhelm_AR488_ESP32S2_2ndCdcForDebug
 //  #define ESP32_Wilhelm_AR488_ESP32S2_R5
   /*
    * Select board ESP32S2 Dev Module from the espressif board definitions
    * Additionally, USB CDC On Boot should be set to "Enabled".
   */
 
-/***** RPI PIco and Pico W *****/
 #elif defined(ARDUINO_ARCH_RP2040)
-  /* Board/layout selection */
+  /** RP2040 Boards **/
   #define RAS_PICO_L1
-//  #define RAS_PICO_L2
+  //#define RAS_PICO_L2
 
 //#elif defined(ARDUINO_NANO_RP2040_CONNECT)
 
@@ -136,7 +134,21 @@
 //#define DEBUG_ENABLE
 #ifdef DEBUG_ENABLE
   // Serial port device
-  #define DB_SERIAL_PORT Serial
+  #ifdef ESP32_Wilhelm_AR488_ESP32S2_R4
+
+    #ifdef ESP32_Wilhelm_AR488_ESP32S2_2ndCdcForDebug
+      #define DB_SERIAL_PORT USBDebugSerial
+      extern USBCDC USBDebugSerial;
+    #else
+      #define DB_SERIAL_PORT AR_SERIAL_PORT
+    #endif
+
+  #else
+    #define DB_SERIAL_PORT Serial
+  #endif
+  
+
+
   // #define DB_SERIAL_SWPORT
   // Set port operating speed
   #define DB_SERIAL_SPEED 115200
@@ -188,6 +200,11 @@
 #ifdef ESP32_Wilhelm_AR488_ESP32S2_R4
   #define SN7516X
   #define SN7516X_TE 17
+  // requires hardware modification:
+  // * remove wire from U12 pin 11 to 19
+  // * unsolder R6 (below ESP32)
+  // * add wire from former R6 hot end to U12 pin 11 (DC)
+  #define SN7516X_DC 45
 #elif ESP32_Wilhelm_AR488_ESP32S2_R5
   #define SN7516X
   #define SN7516X_TE 17
@@ -224,24 +241,9 @@
 //#define REMOTE_SIGNAL_PIN 7
 
 
-/***** 8-way address DIP switch *****/
-#define DIP_SWITCH
-#ifdef DIP_SWITCH
-#define DIP_SW_1  A0
-#define DIP_SW_2  A1
-#define DIP_SW_3  A2
-#define DIP_SW_4  A3
-#define DIP_SW_5  A4
-#define DIP_SW_6  A5
-#define DIP_SW_7  A6
-#define DIP_SW_8  A7
-
-#endif
-
 
 /***** Acknowledge interface is ready *****/
 //#define SAY_HELLO
-
 
 
 /***** DEBUG LEVEL OPTIONS *****/
@@ -259,7 +261,7 @@
   //#define DEBUG_IDFUNC          // ID command
 
   // AR488_GPIBbus module
-  //#define DEBUG_GPIBbus_RECEIVE // GPIBbus::receiveData(), GPIBbus::readByte()
+  #define DEBUG_GPIBbus_RECEIVE // GPIBbus::receiveData(), GPIBbus::readByte()
   //#define DEBUG_GPIBbus_SEND    // GPIBbus::sendData()
   //#define DEBUG_GPIBbus_CONTROL // GPIBbus::setControls() 
   //#define DEBUG_GPIB_COMMANDS   // GPIBbus::sendCDC(), GPIBbus::sendLLO(), GPIBbus::sendLOC(), GPIBbus::sendGTL(), GPIBbus::sendMSA() 

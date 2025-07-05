@@ -923,8 +923,8 @@ void GPIBbus::setControls(uint8_t state) {
 
 
     case CTAS:  // Controller - write data bus
-      clearSignal(ATN_BIT);
       setTransmitMode(TM_SEND);
+      clearSignal(ATN_BIT);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE, HIGH); // DAV -> output
 #endif

@@ -3,7 +3,7 @@
 #include "AR488_Config.h"
 #include "AR488_GPIBbus.h"
 
-/***** AR488_GPIB.cpp, ver. 0.53.11, 08/05/2025 *****/
+/***** AR488_GPIB.cpp, ver. 0.53.18, 05/07/2025 *****/
 
 
 /****** Process status values *****/
@@ -874,8 +874,8 @@ void GPIBbus::setControls(uint8_t state) {
 
 
     case CIDS:  // Controller idle state
-      clearSignal(ATN_BIT);
       setTransmitMode(TM_IDLE);
+      clearSignal(ATN_BIT);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE, LOW);
 #endif
@@ -899,8 +899,8 @@ void GPIBbus::setControls(uint8_t state) {
 
     case CLAS:  // Controller - read data bus
       // Set state for receiving data
-      clearSignal(ATN_BIT);
       setTransmitMode(TM_RECV);
+      clearSignal(ATN_BIT);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE, LOW);
 #endif
@@ -911,8 +911,8 @@ void GPIBbus::setControls(uint8_t state) {
 
 
     case CTAS:  // Controller - write data bus
-      clearSignal(ATN_BIT);
       setTransmitMode(TM_SEND);
+      clearSignal(ATN_BIT);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE, HIGH);
 #endif

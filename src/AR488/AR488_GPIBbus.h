@@ -65,10 +65,11 @@
 #define ALL_BITS (0xFF)
 
 /***** Addressing direction *****/
-#define TONONE 0
-#define TOLISTEN 1
-#define TOTALK 2
-
+enum adressingDirection {
+  TONONE=0,
+  TOLISTEN=1,
+  TOTALK=2
+};
 
 /***** Lastbyte - send EOI *****/
 #define NO_EOI false
@@ -219,7 +220,7 @@ public:
 
   bool addressDevice(uint8_t pri, uint8_t sec, uint8_t dir);
   bool unAddressDevice();
-  uint8_t haveAddressedDevice();
+  adressingDirection haveAddressedDevice();
 
   void setSettleRTime(uint16_t t) { settle_r_time = t; }
   void setSettleSTime(uint16_t t) { settle_s_time = t; }
@@ -229,7 +230,7 @@ public:
 private:
 
   bool txBreak;  // Signal to break the GPIB transmission
-  uint8_t deviceAddressed;
+  adressingDirection deviceAddressed;
   bool isTerminatorDetected(uint8_t bytes[3], uint8_t eorSequence);
 
   // Adjustable settling times

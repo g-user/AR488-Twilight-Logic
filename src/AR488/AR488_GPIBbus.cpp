@@ -73,7 +73,23 @@ void GPIBbus::stop() {
 /***** Initialise the interface *****/
 void GPIBbus::setDefaultCfg() {
   // Set default controller mode values ({'\0'} sets version string array to null)
-  cfg = { false, false, 2, 0, 1, 0xFF, 0, 0, 0, 1200, 0, { '\0' }, 0, { '\0' }, 0, 0, 0 };
+  cfg.eot_en=false;
+  cfg.eoi=false;
+  cfg.cmode=2;
+  cfg.caddr=0;
+  cfg.paddr=1;
+  cfg.saddr=0xFF;
+  cfg.eos=0;
+  cfg.stat=0;
+  cfg.amode=0;
+  cfg.rtmo=1200;
+  cfg.eot_ch=0;
+  cfg.vstr[0]='\0';
+  cfg.eor=0;
+  cfg.sname[0]='\0';
+  cfg.serial=0;
+  cfg.idn=0;
+  cfg.hflags=0;
 }
 
 
@@ -1082,7 +1098,7 @@ bool GPIBbus::addressDevice(uint8_t pri, uint8_t sec=0xFF, uint8_t dir=TOLISTEN)
 /*
  * true = device has been addressed; false = device has not been addressed
  */
-uint8_t GPIBbus::haveAddressedDevice() {
+adressingDirection GPIBbus::haveAddressedDevice() {
   return deviceAddressed;
 }
 

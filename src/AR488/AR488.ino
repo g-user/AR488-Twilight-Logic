@@ -577,23 +577,24 @@ if (lnRdy>0){
     if (lnRdy == 2) {
 
       sendToInstrument(pBuf, pbPtr);
-
-      // Auto-read data from GPIB bus following any command
-      if (gpibBus.cfg.amode == 1) {
+ 
+      // Auto-read data from GPIB bus following a command or query
+      if ( (gpibBus.cfg.amode == 1) || ((gpibBus.cfg.amode == 2) && isQuery) ) {
         gpibBus.addressDevice(gpibBus.cfg.paddr, gpibBus.cfg.saddr, TOTALK);
         errFlg = gpibBus.receiveData(dataPort, gpibBus.cfg.eoi, false, 0);
         if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
+        if (isQuery) isQuery = false;
         gpibBus.unAddressDevice();
       }
 
       // Auto-receive data from GPIB bus following a query command
-      if (gpibBus.cfg.amode == 2 && isQuery) {
-        gpibBus.addressDevice(gpibBus.cfg.paddr, gpibBus.cfg.saddr, TOTALK);
-        errFlg = gpibBus.receiveData(dataPort, gpibBus.cfg.eoi, false, 0);
-        if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
-        isQuery = false;
-        gpibBus.unAddressDevice();
-      }
+//      if (gpibBus.cfg.amode == 2 && isQuery) {
+//        gpibBus.addressDevice(gpibBus.cfg.paddr, gpibBus.cfg.saddr, TOTALK);
+//        errFlg = gpibBus.receiveData(dataPort, gpibBus.cfg.eoi, false, 0);
+//        if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
+//        isQuery = false;
+//        gpibBus.unAddressDevice();
+//      }
 
     }
 
@@ -2848,6 +2849,9 @@ void send_h(char *params) {
 
     }
 
+    if (param[strlen(param)-1] == '?') isQuery = true;
+
+
 /*
 Serial.println(pri);
 Serial.println(sec);
@@ -2858,10 +2862,11 @@ Serial.println(param);
     gpibBus.addressDevice(pri, sec, TOLISTEN);
     gpibBus.sendData(param, strlen(param));
 
-    if (gpibBus.cfg.amode == 1) {
+    if ( (gpibBus.cfg.amode == 1) || ((gpibBus.cfg.amode == 2) && isQuery) ) {
       gpibBus.addressDevice(pri, sec, TOTALK);
       gpibBus.receiveData(dataPort, gpibBus.cfg.eoi, false, 0);
       if (gpibBus.cfg.hflags & 0x02) showFlag(F("Read^OK"));
+      if (isQuery) isQuery = false;
       gpibBus.unAddressDevice();
     }
 

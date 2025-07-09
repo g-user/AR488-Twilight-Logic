@@ -7,8 +7,8 @@
 
 
 /***** Firmware version *****/
-#define FWVER "AR488 GPIB controller, ver. 0.53.18, 05/07/2025"
-
+#define FWVER "AR488 GPIB controller, ver. 0.53.18 + JW , 05/07/2025"
+#define FWVER_USB 0x0053
 
 /***** BOARD CONFIGURATION *****/
 /*
@@ -35,6 +35,8 @@
    * Define board layout in the AR488 CUSTOM LAYOUT
    * section below
    */
+  /* Default serial port type */
+  #define AR_SERIAL_TYPE_HW
 
 #elif defined(__AVR_ATmega328P__)
   /*** ATmega328P - UNO R3, Nano ***/
@@ -67,15 +69,23 @@
   /** ATmega4809 - Nano Every, UNO WiFi Rev2 **/
   #define POE_ETHERNET_GPIB_ADAPTOR
 
-//#elif defined(ESP32)
+#elif defined(ESP32)
   /** ESP32 variants **/
-//  #define NON_ARDUINO   // MUST BE DEFINED!
+  #define NON_ARDUINO   // MUST BE DEFINED!
   //#define ESP32_DEVKIT1_WROOM_32
   // David Douard / Johann Wilhelm board layouts
   //#define ESP32_TTGO_T8_161
   //#define ESP32_ESP32DEV
   //#define ESP32_LOLIN32_161   // ESP32_LOLIN32_161_V2 profile has the same pin assigments
   //#define ESP32_S2_161
+
+  #define ESP32_Wilhelm_AR488_ESP32S2_R4
+  //#define ESP32_Wilhelm_AR488_ESP32S2_2ndCdcForDebug
+//  #define ESP32_Wilhelm_AR488_ESP32S2_R5
+  /*
+   * Select board ESP32S2 Dev Module from the espressif board definitions
+   * Additionally, USB CDC On Boot should be set to "Enabled".
+  */
 
 #elif defined(ARDUINO_ARCH_RP2040)
   /** RP2040 Boards **/
@@ -103,7 +113,14 @@
 #define DATAPORT_ENABLE
 #ifdef DATAPORT_ENABLE
   // Serial port device
+#if  ARDUINO_USB_CDC_ON_BOOT!=1
+  #define AR_SERIAL_PORT_USE_USBSerial 1
+  #define AR_SERIAL_PORT USBSerial
+  extern USBCDC USBSerial;
+#else
   #define AR_SERIAL_PORT Serial
+#endif
+
   // #define AR_SERIAL_SWPORT
   // Set port operating speed
   #define AR_SERIAL_SPEED 115200
@@ -117,7 +134,21 @@
 //#define DEBUG_ENABLE
 #ifdef DEBUG_ENABLE
   // Serial port device
+  #ifdef ESP32_Wilhelm_AR488_ESP32S2_R4
+
+    #ifdef ESP32_Wilhelm_AR488_ESP32S2_2ndCdcForDebug
+      #define DB_SERIAL_PORT USBDebugSerial
+      extern USBCDC USBDebugSerial;
+    #else
+      #define DB_SERIAL_PORT AR_SERIAL_PORT
+    #endif
+
+  #else
   #define DB_SERIAL_PORT Serial
+  #endif
+  
+
+
   // #define DB_SERIAL_SWPORT
   // Set port operating speed
   #define DB_SERIAL_SPEED 115200
@@ -164,6 +195,23 @@
  * This will require the use of an additional GPIO pin to control
  * the read and write modes of the ICs.
  */
+
+
+#ifdef ESP32_Wilhelm_AR488_ESP32S2_R4
+  #define SN7516X
+  #define SN7516X_TE 17
+  // requires hardware modification:
+  // * remove wire from U12 pin 11 to 19
+  // * unsolder R6 (below ESP32)
+  // * add wire from former R6 hot end to U12 pin 11 (DC)
+  #define SN7516X_DC 45
+#elif ESP32_Wilhelm_AR488_ESP32S2_R5
+  #define SN7516X
+  #define SN7516X_TE 17
+  #define SN7516X_DC 38
+  #define SN7516X_PE 1
+#else
+
 //#define SN7516X
 #ifdef SN7516X
 //  #define SN7516X_TE 6
@@ -172,6 +220,7 @@
   // ONLYA board
   #define SN7516X_TE 13
   #define SN7516X_DC 5
+#endif
 #endif
 
 
@@ -206,13 +255,14 @@
   // Main module
   //#define DEBUG_SERIAL_INPUT    // serialIn_h(), parseInput_h()
   //#define DEBUG_CMD_PARSER      // getCmd()
+  //#define DEBUG_READ //read_h()
   //#define DEBUG_SEND_TO_INSTR   // sendToInstrument();
   //#define DEBUG_SPOLL           // spoll_h()
   //#define DEBUG_DEVICE_ATN      // attnRequired()
   //#define DEBUG_IDFUNC          // ID command
 
   // AR488_GPIBbus module
-  //#define DEBUG_GPIBbus_RECEIVE // GPIBbus::receiveData(), GPIBbus::readByte()
+  #define DEBUG_GPIBbus_RECEIVE // GPIBbus::receiveData(), GPIBbus::readByte()
   //#define DEBUG_GPIBbus_SEND    // GPIBbus::sendData()
   //#define DEBUG_GPIBbus_CONTROL // GPIBbus::setControls() 
   //#define DEBUG_GPIB_COMMANDS   // GPIBbus::sendCDC(), GPIBbus::sendLLO(), GPIBbus::sendLOC(), GPIBbus::sendGTL(), GPIBbus::sendMSA() 

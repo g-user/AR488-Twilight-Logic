@@ -2,14 +2,21 @@
 #define AR488_EEPROM_H
 
 #include "AR488_Config.h"
-//#include <EEPROM.h>
+
+
+#if defined(ESP8266) || defined(ESP32)
+  #ifndef E2END
+    #define E2END     //this is used as a flag for existing/nonexisting EEPROM
+  #endif
+#endif
+
 
 /***** AR488_Eeprom.h, ver. 0.01.05, 26/06/2025 *****/
 
 /*
  * EEPROM SIZES:
- * 
- * ATmega2560/1284   4096   // Mega 2560, MightyCore 1284 
+ *
+ * ATmega2560/1284   4096   // Mega 2560, MightyCore 1284
  * ATmega644         2048   // MightyCore 644
  * ATmega328/32u4    1024   // Uno, Nano, Leonardo
  * ATmega168          512

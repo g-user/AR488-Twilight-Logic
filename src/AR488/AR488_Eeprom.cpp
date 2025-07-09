@@ -2,15 +2,15 @@
 #include <EEPROM.h>
 #include "AR488_Eeprom.h"
 
-/***** AR488_Eeprom.cpp, ver. 0.01.05, 26/056/2025 *****/
+
+/***** AR488_Eeprom.cpp, ver. 0.01.05, 26/06/2025 *****/
 /*
  * EEPROM functions implementation
  */
 
 
-
 /***** Forward declarations of internal functions *****/
-uint16_t getCRC16(uint8_t bytes[], uint16_t bsize);
+uint16_t getCRC16(uint8_t bytes[], size_t bsize);
 unsigned long int getCRC32(uint8_t bytes[], uint16_t bsize);
 
 
@@ -176,6 +176,7 @@ void epWriteData(uint8_t cfgdata[], size_t cfgsize) {
   for (size_t i=0; i<cfgsize; i++) {
     EEPROM.write(i+EESTART, cfgdata[i]);
   }
+
   // Write CRC
   crc = getCRC16(cfgdata, cfgsize);
   EEPROM.put(0, crc);

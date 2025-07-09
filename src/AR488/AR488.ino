@@ -78,6 +78,20 @@
 */
 
 
+
+#if AR_SERIAL_PORT_USE_USBSerial==1
+  #include "USB.h"
+  #include "USBCDC.h"
+  USBCDC USBSerial(0);
+  #ifdef DEBUG_ENABLE
+    #ifdef ESP32_Wilhelm_AR488_ESP32S2_2ndCdcForDebug
+      USBCDC USBDebugSerial(1);
+    #endif
+  #endif
+  
+  #include "esp_mac.h"
+#endif
+
 /*************************************/
 /***** MACRO STRUCTRURES SECTION *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
@@ -99,6 +113,8 @@ const char macro_6 [] PROGMEM = {MACRO_6};
 const char macro_7 [] PROGMEM = {MACRO_7};
 const char macro_8 [] PROGMEM = {MACRO_8};
 const char macro_9 [] PROGMEM = {MACRO_9};
+
+
 
 
 /* Macro pointer array */
@@ -164,6 +180,8 @@ static const char cmdHelp[] PROGMEM = {
   "read_tmo_ms:P Read timeout specified between 1 - 3000 milliseconds\n"
   "rst:P Reset the controller\n"
   "savecfg:P Save configration\n"
+  "settle_r:P Settling time on read operation, between 0 and 16000 microseconds\n"
+  "settle_s:P Settling time on send operation, between 0 and 16000 microseconds\n"
   "spoll:P Serial poll the addressed host or all instruments\n"
   "srq:P Return status of srq signal (1-srq asserted/0-srq not asserted)\n"
   "status:P Set the status byte to be returned on being polled (bit 6 = RQS, i.e SRQ asserted)\n"
@@ -370,6 +388,31 @@ void setup() {
   startDebugPort(DB_SERIAL_SPEED);
 #endif
 
+#if AR_SERIAL_PORT_USE_USBSerial==1
+
+  //fore re-enumeration
+  pinMode(20, OUTPUT);
+  digitalWrite(20, LOW);
+  delay(100); //some say 5ms is enougth, some code on the web uses 50... here it's 100 we can.
+  
+
+  USB.firmwareVersion(FWVER_USB);
+  USB.manufacturerName("Twilight-Logic");
+  USB.productName("AR488");
+
+  uint8_t mac[6] = {0};
+  static char serialString[18]="unset";
+  esp_err_t ret = ESP_OK;
+  ret = esp_read_mac(mac, ESP_MAC_EFUSE_FACTORY);
+  if (ret==ESP_OK) {
+    sprintf(serialString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  }
+
+  USB.serialNumber(serialString);
+
+  USB.begin();
+#endif
+  
 #ifdef AR_SERIAL_BT_ENABLE
   // If enabled, initialise Bluetooth
   /* If its the same interface as AR_SERIAL_PORT then there will be
@@ -809,20 +852,6 @@ bool isIdnQuery(char *buffr) {
   return false;
 }
 
-
-/***** ++read command detected? *****/
-bool isRead(char *buffr) {
-  char cmd[4];
-  // Copy 2nd to 5th character
-  for (int i = 2; i < 6; i++) {
-    cmd[i - 2] = buffr[i];
-  }
-  // Compare with 'read'
-  if (strncmp(cmd, "read", 4) == 0) return true;
-  return false;
-}
-
-
 /***** Is the parameter a number *****/
 bool isNumber(char *numstr){
   uint8_t numlen = strlen(numstr);
@@ -910,7 +939,9 @@ static cmdRec cmdHidx [] = {
   { "unt",         2, (void(*)(char*)) untalk_h    },
   { "ver",         3, ver_h       },
   { "verbose",     3, (void(*)(char*)) verb_h    },
-  { "xdiag",       3, xdiag_h     }
+  { "xdiag",       3, xdiag_h     },
+  { "settle_r",    3, settler_h     },
+  { "settle_s",    3, settles_h     },
 };
 
 
@@ -1282,6 +1313,38 @@ void rtmo_h(char *params) {
   }
 }
 
+/***** Show or set receive settle time (in us) *****/
+void settler_h(char *params) {
+  uint16_t val;
+  if (params != NULL) {
+    if (notInRange(params, 0, 32000, val)) return;
+    gpibBus.setSettleRTime(val);
+    if (isVerb) {
+      dataPort.print(F("Set [receive settle time] to: "));
+      dataPort.print(val);
+      dataPort.println(F(" us"));
+    }
+  } else {
+    dataPort.println(gpibBus.getSettleRTime());
+  }
+}
+
+/***** Show or set send settle time (in us) *****/
+void settles_h(char *params) {
+  uint16_t val;
+  if (params != NULL) {
+    if (notInRange(params, 0, 32000, val)) return;
+    gpibBus.setSettleSTime(val);
+    if (isVerb) {
+      dataPort.print(F("Set [send settle time] to: "));
+      dataPort.print(val);
+      dataPort.println(F(" us"));
+    }
+  } else {
+    dataPort.println(gpibBus.getSettleSTime());
+  }
+}
+
 
 /***** Show or set end of send character *****/
 void eos_h(char *params) {
@@ -1423,52 +1486,68 @@ void read_h(char *params) {
   // Read any parameters
   if (params != NULL) {
 
-    // 1st parameter ( eoi, terminator character or address value ? )
+    int numParams=0;
     param = strtok(params, " ,\t");
-    if (isNumber(param)) {
-      // Primary address in range ?
-      val = strtoul(param, NULL, 10);
-      if (val>30) {
+    while (param) {
+      param = strtok(NULL, " ,\t");
+      numParams++;
+    }
+
+#ifdef DEBUG_CMD_PARSER
+  DB_PRINT(F("parameters: "), numParams);
+#endif
+    
+    if (numParams==1) {
+      // Check for eoi or terminator character
+      if (strlen(params) > 3) {
         errorMsg(2);
         return;
+      } else if (strncasecmp(params, "eoi", 3) == 0) { // Read with eoi detection
+        readWithEoi = true;
+      } else { // Assume ASCII character given and convert to an 8 bit byte
+        readWithEndByte = true;
+        endByte = atoi(params);
       }
-      pri = (uint8_t)val;
-
-      // 2nd parameter ( * or address value )
-      param = strtok(NULL, " ,\t");
+    } else if (numParams==3) {
+       // 1st parameter ( eoi, terminator character or address value ? )
+      param = strtok(params, " ,\t");
       if (isNumber(param)) {
+        // Primary address in range ?
         val = strtoul(param, NULL, 10);
-        if (val<31) val = val + 0x60;
-        if (val<0x60 || val>0x7E) {
+        if (val>30) {
           errorMsg(2);
           return;
         }
-        sec = (uint8_t)val;
-
-        // 3rd parameter
+        pri = (uint8_t)val;
+  
+        // 2nd parameter ( * or address value )
         param = strtok(NULL, " ,\t");
-
-      }else{
-        sec = 0xFF;
-      }
-
-    }
-    
-    // Check for eoi or terminator character
-    if (strlen(param) > 3) {
-      errorMsg(2);
-      return;
-    } else if (strncasecmp(params, "eoi", 3) == 0) { // Read with eoi detection
-      readWithEoi = true;
-    } else { // Assume ASCII character given and convert to an 8 bit byte
-      readWithEndByte = true;
-      endByte = atoi(param);
+        if (isNumber(param)) {
+          val = strtoul(param, NULL, 10);
+          if (val<31) val = val + 0x60;
+          if (val<0x60 || val>0x7E) {
+            errorMsg(2);
+            return;
+          }
+          sec = (uint8_t)val;
+  
+          // 3rd parameter
+          param = strtok(NULL, " ,\t");
+  
+        }else{
+          sec = 0xFF;
+        }
+  
+      }   
+    } else {
+        errorMsg(2);
     }
   }
-
-//DB_PRINT(F("readWithEoi:     "), readWithEoi);
-//DB_PRINT(F("readWithEndByte: "), readWithEndByte);
-
+  
+#ifdef DEBUG_CMD_PARSER
+  DB_PRINT(F("readWithEoi:     "), readWithEoi);
+  DB_PRINT(F("readWithEndByte: "), readWithEndByte);
+#endif
   // Address device to talk
   if (gpibBus.haveAddressedDevice() != TOTALK) gpibBus.addressDevice(pri, sec, TOTALK);
 
@@ -1667,10 +1746,7 @@ void spoll_h(char *params) {
     all = true;
     j = 30;
     if (isVerb) dataPort.println(F("Serial poll of all devices requested..."));
-  }
-
-  if (j == 0) {
-
+  } else {
     // Read address parameters into array
     while (j < 15) {
 
@@ -2073,7 +2149,6 @@ void verb_h() {
   dataPort.print("Verbose: ");
   dataPort.println(isVerb ? "ON" : "OFF");
 }
-
 
 /***** Set version string *****/
 /* Replace the standard AR488 version string with something else
